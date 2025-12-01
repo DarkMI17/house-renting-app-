@@ -13,7 +13,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
 
-  final TextEditingController emailControll = TextEditingController();
+  final TextEditingController phoneControll = TextEditingController();
   final TextEditingController passwordControll = TextEditingController();
   bool visible = true ;
   final _formKey = GlobalKey<FormState>();
@@ -41,18 +41,24 @@ class _MyAppState extends State<MyApp> {
                 style: TextStyle(fontSize: 35 , color: Colors.teal , fontWeight: FontWeight.bold)  ),
         
                 SizedBox(height: 20,),
-        
-                TextFormField( controller: emailControll
-                   ,decoration: InputDecoration(labelText: "Email" ,
-                 hintText: "enter email" ,
+
+
+                //still need to check phone number type and restrints
+                TextFormField( controller: phoneControll
+                   ,decoration: InputDecoration(labelText: "Phone Number" ,
+                 hintText: "enter phone umber" ,
                   border: OutlineInputBorder(),
                   prefix: Container(margin: EdgeInsets.only(right: 10),
-                  child: Icon(Icons.email))),
+                  child: Icon(Icons.phone))),
                   validator: (value) {
-                    if(emailControll.text.isEmpty){
+                    if(phoneControll.text.isEmpty){
                       return "this field is empty" ;
                     }
-                    // if(emailControll.text.contains('@'))
+
+                     if(phoneControll.text.length!=10 /*|| phoneControll.text.startsWith("09")*/){
+                      return "wrong format";
+                     }
+                     
                     return null ;
                   },
                   ),
