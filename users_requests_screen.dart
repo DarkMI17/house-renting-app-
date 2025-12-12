@@ -88,7 +88,7 @@ class UserRequestsScreen extends StatelessWidget {
                 const SizedBox(width: 10),
 
                 SizedBox(
-                    width: 150, // عرض مخصص للأزرار لتقليل الحجم
+                    width: 150,
                     child: Row(
                         children: [
                     Expanded(
@@ -105,7 +105,7 @@ class UserRequestsScreen extends StatelessWidget {
                           const SizedBox(width: 5),
                           Expanded(
                             child: ElevatedButton(
-                              onPressed: () { debugPrint('Reject clicked for $name'); }, // تم تغيير "Delete" إلى "Reject"
+                              onPressed: () { debugPrint('Reject clicked for $name'); }, 
                               child: const Text("Reject", style: TextStyle(fontSize: 15)),
                               style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.redAccent,
@@ -137,7 +137,7 @@ class UserRequestsScreen extends StatelessWidget {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800), // زيادة العرض قليلاً للـ UI الجديدة
+          constraints: const BoxConstraints(maxWidth: 800), 
           child: Padding(
             padding: const EdgeInsets.all(20.0),
             child: ListView(
@@ -156,5 +156,6 @@ class UserRequestsScreen extends StatelessWidget {
     );
   }
 }
+
 
 // home: UserRequestsScreen(),
