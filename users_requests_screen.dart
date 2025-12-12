@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 class UserRequestsScreen extends StatelessWidget {
   const UserRequestsScreen({super.key});
 
-  //  مربع حوار لصورة الهوية
   void _showIDImageDialog(BuildContext context, String userName) {
     showDialog(
       context: context,
@@ -159,3 +158,4 @@ class UserRequestsScreen extends StatelessWidget {
 
 
 // home: UserRequestsScreen(),
+
