@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'signup.dart'; 
+import 'package:get/get.dart'; // Add this import
+import 'signup.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -28,7 +29,6 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Login"),
         backgroundColor: Colors.teal,
       ),
       body: Padding(
@@ -127,15 +127,11 @@ class _LoginPageState extends State<LoginPage> {
 
                   const SizedBox(height: 20),
 
-                  // Sign up option
+                  // Sign up option - CHANGED TO GET.NAVIGATION
                   TextButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SignUpPage(),
-                        ),
-                      );
+                      // Changed from Navigator.push to Get.to
+                      Get.to(() => const SignUpPage());
                     },
                     child: const Text(
                       "Don't have an account? Sign Up",
