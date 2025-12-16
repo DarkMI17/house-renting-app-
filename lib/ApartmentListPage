@@ -1,0 +1,518 @@
+import 'package:flutter/material.dart';
+
+class ApartmentListPage extends StatefulWidget {
+  const ApartmentListPage({super.key});
+
+  @override
+  State<ApartmentListPage> createState() => _ApartmentListPageState();
+}
+
+class _ApartmentListPageState extends State<ApartmentListPage> {
+  final TextEditingController _searchController = TextEditingController();
+  String _selectedFilter = 'All';
+  String _selectedSort = 'Price: Low to High';
+  List<Map<String, dynamic>> _filteredApartments = [];
+
+  // Sample apartment data
+  final List<Map<String, dynamic>> apartments = [
+    {
+      'id': 1,
+      'title': 'Modern Downtown Apartment',
+      'location': 'Los Angeles, CA',
+      'price': 1200,
+      'image': 'https://via.placeholder.com/300x200/4DB6AC/FFFFFF?text=LA+Apt',
+      'bedrooms': 2,
+      'bathrooms': 1,
+      'area': '850 sqft',
+      'type': 'Apartment',
+      'rating': 4.5,
+      'isFavorite': false,
+    },
+    {
+      'id': 2,
+      'title': 'Luxury Beach Villa',
+      'location': 'Miami, FL',
+      'price': 2500,
+      'image': 'https://via.placeholder.com/300x200/4DB6AC/FFFFFF?text=Miami+Villa',
+      'bedrooms': 3,
+      'bathrooms': 2,
+      'area': '1200 sqft',
+      'type': 'Villa',
+      'rating': 4.8,
+      'isFavorite': true,
+    },
+    {
+      'id': 3,
+      'title': 'City Center Studio',
+      'location': 'New York, NY',
+      'price': 1800,
+      'image': 'https://via.placeholder.com/300x200/4DB6AC/FFFFFF?text=NYC+Studio',
+      'bedrooms': 1,
+      'bathrooms': 1,
+      'area': '600 sqft',
+      'type': 'Studio',
+      'rating': 4.3,
+      'isFavorite': false,
+    },
+    {
+      'id': 4,
+      'title': 'Suburban Family Home',
+      'location': 'Houston, TX',
+      'price': 1500,
+      'image': 'https://via.placeholder.com/300x200/4DB6AC/FFFFFF?text=Houston+Home',
+      'bedrooms': 4,
+      'bathrooms': 2,
+      'area': '1500 sqft',
+      'type': 'House',
+      'rating': 4.6,
+      'isFavorite': false,
+    },
+  ];
+
+  final List<String> filters = ['All', 'Apartment', 'House', 'Villa', 'Studio', 'Condo'];
+  final List<String> sortOptions = ['Price: Low to High', 'Price: High to Low', 'Rating', 'Bedrooms'];
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredApartments = List.from(apartments);
+    _searchController.addListener(_searchApartments);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _searchApartments() {
+    final query = _searchController.text.toLowerCase();
+    
+    setState(() {
+      if (query.isEmpty) {
+        _filteredApartments = List.from(apartments);
+      } else {
+        _filteredApartments = apartments.where((apartment) {
+          return apartment['title'].toLowerCase().contains(query) ||
+                 apartment['location'].toLowerCase().contains(query) ||
+                 apartment['type'].toLowerCase().contains(query);
+        }).toList();
+      }
+    });
+  }
+
+  void _applyFilter(String filter) {
+    setState(() {
+      _selectedFilter = filter;
+      if (filter == 'All') {
+        _filteredApartments = List.from(apartments);
+      } else {
+        _filteredApartments = apartments.where((apt) => apt['type'] == filter).toList();
+      }
+      _searchApartments();
+    });
+  }
+
+  void _applySort(String sort) {
+    setState(() {
+      _selectedSort = sort;
+      
+      switch (sort) {
+        case 'Price: Low to High':
+          _filteredApartments.sort((a, b) => a['price'].compareTo(b['price']));
+          break;
+        case 'Price: High to Low':
+          _filteredApartments.sort((a, b) => b['price'].compareTo(a['price']));
+          break;
+        case 'Rating':
+          _filteredApartments.sort((a, b) => b['rating'].compareTo(a['rating']));
+          break;
+        case 'Bedrooms':
+          _filteredApartments.sort((a, b) => b['bedrooms'].compareTo(a['bedrooms']));
+          break;
+      }
+    });
+  }
+
+  void _toggleFavorite(int id) {
+    setState(() {
+      final index = apartments.indexWhere((apt) => apt['id'] == id);
+      if (index != -1) {
+        apartments[index]['isFavorite'] = !apartments[index]['isFavorite'];
+        _searchApartments();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Browse Properties"),
+        backgroundColor: Colors.teal,
+      ),
+      body: Column(
+        children: [
+          // Search Bar
+          Padding(
+            padding: const EdgeInsets.all(15),
+            child: TextFormField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                labelText: "Search properties...",
+                hintText: "Enter location, type, or name",
+                border: const OutlineInputBorder(),
+                prefix: Container(
+                  margin: const EdgeInsets.only(right: 10),
+                  child: const Icon(Icons.search, color: Colors.teal),
+                ),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          _searchApartments();
+                        },
+                      )
+                    : null,
+              ),
+            ),
+          ),
+
+          // Filter and Sort Row - FIXED VERSION
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+            child: Column(
+              children: [
+                // Filter Row
+                Row(
+                  children: [
+                    const Icon(Icons.filter_list, color: Colors.teal),
+                    const SizedBox(width: 10),
+                    const Text(
+                      "Filter:",
+                      style: TextStyle(
+                        color: Colors.teal,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Container(
+                        height: 50,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.teal),
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: DropdownButton<String>(
+                          value: _selectedFilter,
+                          isExpanded: true,
+                          underline: const SizedBox(),
+                          items: filters.map((String filter) {
+                            return DropdownMenuItem<String>(
+                              value: filter,
+                              child: Text(filter),
+                            );
+                          }).toList(),
+                          onChanged: (String? value) {
+                            if (value != null) {
+                              _applyFilter(value);
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                
+                // Sort Row
+                Row(
+                  children: [
+                    const Icon(Icons.sort, color: Colors.teal),
+                    const SizedBox(width: 10),
+                    const Text(
+                      "Sort by:",
+                      style: TextStyle(
+                        color: Colors.teal,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Container(
+                        height: 50,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.teal),
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: DropdownButton<String>(
+                          value: _selectedSort,
+                          isExpanded: true,
+                          underline: const SizedBox(),
+                          items: sortOptions.map((String option) {
+                            return DropdownMenuItem<String>(
+                              value: option,
+                              child: Text(option),
+                            );
+                          }).toList(),
+                          onChanged: (String? value) {
+                            if (value != null) {
+                              _applySort(value);
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Results Count
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+            color: Colors.teal.withOpacity(0.1),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "${_filteredApartments.length} properties found",
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.teal,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (_searchController.text.isNotEmpty || _selectedFilter != 'All')
+                  TextButton(
+                    onPressed: () {
+                      _searchController.clear();
+                      _applyFilter('All');
+                      _applySort('Price: Low to High');
+                    },
+                    child: const Text(
+                      "Clear All",
+                      style: TextStyle(color: Colors.teal),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          // Apartments List
+          Expanded(
+            child: _filteredApartments.isEmpty
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.search_off, size: 60, color: Colors.grey),
+                        SizedBox(height: 20),
+                        Text(
+                          "No properties found",
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                        Text(
+                          "Try a different search or filter",
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(15),
+                    itemCount: _filteredApartments.length,
+                    itemBuilder: (context, index) {
+                      final apartment = _filteredApartments[index];
+                      return _buildApartmentCard(apartment);
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildApartmentCard(Map<String, dynamic> apartment) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 15),
+      elevation: 3,
+      child: InkWell(
+        onTap: () {
+          // Navigate to detail page
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top row with image and basic info
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Property Image
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.teal.withOpacity(0.1),
+                      image: DecorationImage(
+                        image: NetworkImage(apartment['image']),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  
+                  // Property Details
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                apartment['title'],
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.teal,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                apartment['isFavorite'] 
+                                    ? Icons.favorite 
+                                    : Icons.favorite_border,
+                                color: apartment['isFavorite'] 
+                                    ? Colors.red 
+                                    : Colors.grey,
+                                size: 20,
+                              ),
+                              onPressed: () => _toggleFavorite(apartment['id']),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 5),
+                        
+                        // Location
+                        Row(
+                          children: [
+                            const Icon(Icons.location_on, 
+                                size: 14, color: Colors.grey),
+                            const SizedBox(width: 5),
+                            Expanded(
+                              child: Text(
+                                apartment['location'],
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        
+                        // Property Type Badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.teal.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            apartment['type'],
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.teal,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Property Features
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildFeatureItem(Icons.bed, '${apartment['bedrooms']} Beds'),
+                  _buildFeatureItem(Icons.bathtub, '${apartment['bathrooms']} Baths'),
+                  _buildFeatureItem(Icons.square_foot, apartment['area']),
+                  _buildFeatureItem(Icons.star, '${apartment['rating']}'),
+                ],
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Price and Action Button
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '\$${apartment['price']}/month',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.teal,
+                    ),
+                  ),
+                  MaterialButton(
+                    onPressed: () {
+                      // Navigate to detail page
+                    },
+                    color: Colors.teal,
+                    textColor: Colors.white,
+                    height: 36,
+                    child: const Text("View Details"),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeatureItem(IconData icon, String text) {
+    return Column(
+      children: [
+        Icon(icon, size: 20, color: Colors.teal),
+        const SizedBox(height: 4),
+        Text(
+          text,
+          style: const TextStyle(
+            fontSize: 12,
+            color: Colors.grey,
+          ),
+        ),
+      ],
+    );
+  }
+}
