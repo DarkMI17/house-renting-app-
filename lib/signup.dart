@@ -50,6 +50,24 @@ class _SignUpPageState extends State<SignUpPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xfff4f6fa),
+      
+        appBar: AppBar(
+        title: const Text('Sign Up'),
+        centerTitle: true,
+        leading: Builder(
+      builder: (BuildContext context) {
+       return IconButton.filled(
+           icon: const Icon(Icons.arrow_back),
+          style: ButtonStyle(backgroundColor: WidgetStateProperty.all(Colors.teal)),
+           hoverColor: Colors.grey,
+           onPressed: () { Navigator.pop(context); },
+           tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
+      );
+       },
+     ),          
+        ),
+        
+      
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -179,3 +197,4 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 }
+
