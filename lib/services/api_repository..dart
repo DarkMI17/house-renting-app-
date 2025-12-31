@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart'; // Standard import for Response and DioException
+import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'network_service.dart';
 import 'package:house_rent_app_002/services/services/storage_service.dart';
@@ -60,7 +61,7 @@ class ApiRepository {
   }
 
   // 2. Register Logic/*
- /* Future<Map<String, dynamic>> register({
+  /* Future<Map<String, dynamic>> register({
     required String phone,
     required String password,
     required String passwordConfirmation,
@@ -243,14 +244,21 @@ class ApiRepository {
   }
 
 
-  // 1. جلب الشقق الخاصة بالمستخدم المسجل (التي أضفناها للباك إند)
+
   Future<List<dynamic>> getMyProperties() async {
     try {
-      final response = await _networkService.get('/my-apartments');
-      // السيرفر سيعيد مصفوفة من الشقق
-      return response.data as List<dynamic>;
+      // تم التعديل للمسار الصحيح في Laravel
+      final response = await _networkService.get('/apartments');
+
+      // التعامل مع البيانات سواء كانت قائمة مباشرة أو داخل مفتاح data
+      if (response.data is List) {
+        return response.data;
+      } else if (response.data is Map && response.data['data'] != null) {
+        return response.data['data'];
+      }
+      return [];
     } catch (e) {
-      print("Error fetching my properties: $e");
+      print("Error fetching properties: $e");
       return [];
     }
   }
@@ -287,4 +295,71 @@ class ApiRepository {
       };
     }
   }
+
+  Future<Map<String, dynamic>> bookApartment(int apartmentId, DateTimeRange dates) async {
+    try {
+      final response = await _networkService.post('/bookings', data: {
+        'apartment_id': apartmentId,
+        'start_date': dates.start.toIso8601String(),
+        'end_date': dates.end.toIso8601String(),
+      });
+      return {'success': true, 'data': response.data};
+    } catch (e) {
+      return {'success': false, 'message': 'Booking failed'};
+    }
+  }
+
+  Future<Map<String, dynamic>> addReview(int apartmentId, double rating, String comment) async {
+    try {
+      final response = await _networkService.post('/reviews', data: {
+        'apartment_id': apartmentId,
+        'rating': rating.toInt(),
+        'comment': comment,
+      });
+      return {'success': true, 'message': 'Review added!'};
+    } catch (e) {
+      return {'success': false, 'message': 'You must book first to review'};
+    }
+  }
+  // This matches your Laravel 'store' method in BookingController
+  Future<Map<String, dynamic>> submitBookingRequest(int apartmentId, DateTime start, DateTime end) async {
+    try {
+      final response = await _networkService.post('/bookings', data: {
+        'apartment_id': apartmentId,
+        'start_date': start.toIso8601String().split('T')[0], // YYYY-MM-DD
+        'end_date': end.toIso8601String().split('T')[0],     // YYYY-MM-DD
+      });
+
+      // Success code 201 as returned by your Laravel code
+      return {'success': true, 'data': response.data};
+    } on DioException catch (e) {
+      // Handling "Apartment not available" 422 error from your checkAvailability
+      return {
+        'success': false,
+        'message': e.response?.data['message'] ?? 'Booking failed'
+      };
+    }
+  }
+  // Matches your Laravel: public function store(Request $request)
+  Future<Map<String, dynamic>> sendBookingRequest(int apartmentId, DateTimeRange range) async {
+    try {
+      final response = await _networkService.post('/bookings', data: {
+        'apartment_id': apartmentId,
+        'start_date': range.start.toIso8601String().split('T')[0], // YYYY-MM-DD
+        'end_date': range.end.toIso8601String().split('T')[0],     // YYYY-MM-DD
+      });
+
+      return {
+        'success': true,
+        'data': response.data
+      };
+    } on DioException catch (e) {
+
+      return {
+        'success': false,
+        'message': e.response?.data['message'] ?? 'This date is already booked!'
+      };
+    }
+  }
+
 }

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:house_rent_app_002/pages/ApartmentListPage.dart';
 import 'package:house_rent_app_002/services/services/storage_service.dart';
 import 'services/network_service.dart';
 import 'pages/login.dart';
 import 'pages/homePage.dart';
-
+import 'pages/apartment_details_page.dart';
+/*
 void main() async {
   // 1. ضمان تهيئة أدوات فلاتر قبل أي كود برمجي
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,6 +34,25 @@ class MyApp extends StatelessWidget {
       home: StorageService.getToken() != null
           ? const HomePage()
           : const LoginPage(),
+    );
+  }
+}*/
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await StorageService.init();
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return GetMaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(primarySwatch: Colors.teal),
+
+      home: const HomePage(),
     );
   }
 }

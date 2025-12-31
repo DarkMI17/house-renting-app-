@@ -5,7 +5,7 @@ import 'ApartmentListPage.dart';
 import 'AddPropertyPage.dart';
 import 'UserInfoPage.dart';
 import 'login.dart';
-
+import 'Apartment.dart';
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -122,8 +122,12 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             _buildDrawerItem(Icons.home, 'Home', () => Get.back()),
-            _buildDrawerItem(Icons.search, 'Browse', () => Get.to(() => const ApartmentListPage())),
-            _buildDrawerItem(Icons.add_box, 'Add Property', () => Get.to(() => const AddPropertyPage())),
+            _buildDrawerItem(
+                Icons.search,
+                'Browse',
+                    () => Get.to(() => ApartmentListPage())
+            ),
+            _buildDrawerItem(Icons.add_box, 'Add Property', () => Get.to(() => AddPropertyPage())),
             const Divider(),
             _buildDrawerItem(Icons.logout, 'Logout', () => _logout()),
           ],
