@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../services/api_repository..dart'; // تأكدي من عدد النقاط في المسار
+import '../services/api_repository.dart'; // تأكدي من عدد النقاط في المسار
 import 'ApartmentListPage.dart';
 import 'AddPropertyPage.dart';
 import 'UserInfoPage.dart';

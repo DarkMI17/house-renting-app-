@@ -5,7 +5,7 @@ import 'package:house_rent_app_002/services/services/storage_service.dart';
 import 'services/network_service.dart';
 import 'pages/login.dart';
 import 'pages/homePage.dart';
-import 'pages/apartment_details_page.dart';
+import 'pages/ApartmentDetailsPage.dart';
 /*
 void main() async {
   // 1. ضمان تهيئة أدوات فلاتر قبل أي كود برمجي

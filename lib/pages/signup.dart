@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import '../services/api_repository..dart'; // تأكدي من صحة المسار
+import '../services/api_repository.dart';
 import 'login.dart';
 import 'homePage.dart';
 import '../services/config.dart'; // تأكدي من أن المسار يؤدي إلى المجلد الصحيح
@@ -126,7 +126,7 @@ class _SignUpPageState extends State<SignUpPage> {
             children: [
               const SizedBox(height: 20),
 
-              // ودجت اختيار الصورة الشخصية
+
               GestureDetector(
                 onTap: () async {
                   final XFile? image = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 50);

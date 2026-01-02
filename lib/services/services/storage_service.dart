@@ -8,13 +8,13 @@ class StorageService {
     _prefs = await SharedPreferences.getInstance();
   }
 
-  // حفظ التوكن
+
   static Future<void> saveToken(String token) async =>
       await _prefs?.setString('access_token', token);
 
   static String? getToken() => _prefs?.getString('access_token');
 
-  // الدوال التي كانت ناقصة وتسببت في الخطأ
+
   static Future<void> saveUser(String userJson) async =>
       await _prefs?.setString('user_data', userJson);
 

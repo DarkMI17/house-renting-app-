@@ -25,10 +25,10 @@ class NetworkService {
       ),
     );
 
-    // إضافة الـ Interceptor (الحارس التلقائي)
+
     _dio.interceptors.add(dio_service.InterceptorsWrapper(
       onRequest: (options, handler) {
-        // حقن التوكن تلقائياً من المخزن في "رأس" الطلب
+
         final token = StorageService.getToken();
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
@@ -37,10 +37,10 @@ class NetworkService {
         return handler.next(options);
       },
       onError: (dio_service.DioException error, handler) {
-        // إذا رجع السيرفر خطأ 401 (التوكن انتهى)
+
         if (error.response?.statusCode == 401) {
           StorageService.logout();
-          Get.offAll(() => const LoginPage()); // طرد المستخدم لصفحة اللوجن
+          Get.offAll(() => const LoginPage());
         }
         return handler.next(error);
       },
@@ -48,16 +48,17 @@ class NetworkService {
     _isInitialized = true;
   }
 
-  Future<dio_service.Response> get(String path) async {
+  Future<dio_service.Response> get(String path, {Map<String, dynamic>? queryParameters}) async {
     if (!_isInitialized) initialize();
-    return await _dio.get(path);
+
+    return await _dio.get(path, queryParameters: queryParameters);
   }
 
   Future<dio_service.Response> post(String path, {dynamic data}) async {
     if (!_isInitialized) initialize();
     return await _dio.post(path, data: data);
   }
-// أضيفي هذه الدوال داخل كلاس NetworkService
+
   Future<Response> delete(String path, {Object? data, Map<String,
       dynamic>? queryParameters, Options? options}) async {
     return await _dio.delete(

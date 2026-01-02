@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'network_service.dart';
 import 'package:house_rent_app_002/services/services/storage_service.dart';
-
+import 'package:http_parser/http_parser.dart';
 class ApiRepository {
   final NetworkService _networkService = NetworkService();
 
@@ -21,7 +21,7 @@ class ApiRepository {
       final Map<String, dynamic> responseData = response.data;
       print("Server Response: $responseData");
 
-      // التصحيح: نعتبر العملية ناجحة إذا كان هناك توكن أو كانت الرسالة "Login successful"
+
       if (responseData['access_token'] != null || responseData['message'] == 'Login successful') {
 
         // إضافة حقل success يدوياً لكي تفهمه صفحة الـ LoginPage
@@ -59,51 +59,6 @@ class ApiRepository {
       };
     }
   }
-
-  // 2. Register Logic/*
-  /* Future<Map<String, dynamic>> register({
-    required String phone,
-    required String password,
-    required String passwordConfirmation,
-    required String first_name,
-    required String last_name,
-    required String dob,
-    required String role,
-    required File idImage,
-  }) async {
-    try {
-      FormData formData = FormData.fromMap({
-        'phone': phone,
-        'password': password,
-        'password_confirmation': passwordConfirmation,
-        'first_name': first_name,
-        'last_name': last_name,
-        'dob': dob,
-        'role': role,
-        'id_image': await MultipartFile.fromFile(
-          idImage.path,
-          filename: idImage.path.split('/').last,
-        ),
-      });
-
-      final response = await _networkService.post('/register', data: formData);
-
-      // Using response.data here as well
-      final Map<String, dynamic> responseData = response.data;
-
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        String token = responseData['access_token'];
-        await StorageService.saveToken(token);
-        await StorageService.saveUser(jsonEncode(responseData['user']));
-        return {'success': true, 'data': responseData};
-      }
-      return {'success': false, 'message': 'Registration failed'};
-    } catch (e) {
-      return {'success': false, 'message': 'Error during registration: $e'};
-    }
-  }*/
-// 2. Register Logic - النسخة المصححة
-// 2. Register Logic - النسخة المصححة لدعم الـ Avatar
   Future<Map<String, dynamic>> register({
     required String phone,
     required String password,
@@ -113,10 +68,10 @@ class ApiRepository {
     required String dob,
     required String role,
     required File idImage,
-    File? avatar, // أضفنا هذا السطر لاستقبال الصورة الشخصية (اختياري)
+    File? avatar,
   }) async {
     try {
-      // 1. تجهيز البيانات الأساسية
+
       Map<String, dynamic> dataMap = {
         'phone': phone,
         'password': password,
@@ -131,7 +86,7 @@ class ApiRepository {
         ),
       };
 
-      // 2. إضافة الـ avatar للـ Map فقط إذا لم يكن فارغاً
+
       if (avatar != null) {
         dataMap['avatar'] = await MultipartFile.fromFile(
           avatar.path,
@@ -139,7 +94,7 @@ class ApiRepository {
         );
       }
 
-      // 3. تحويل الـ Map إلى FormData
+
       FormData formData = FormData.fromMap(dataMap);
 
       final response = await _networkService.post('/register', data: formData);
@@ -188,7 +143,7 @@ class ApiRepository {
   }
 
   // 4. UPLOAD PROPERTY
-  /// Function to create a property and upload its images in a single request
+
   Future<Map<String, dynamic>> addPropertyWithImages(Map<String, dynamic> data, List<File> images) async {
     try {
       // 1. Initialize FormData with text fields (title, price, city_id, etc.)
@@ -247,10 +202,10 @@ class ApiRepository {
 
   Future<List<dynamic>> getMyProperties() async {
     try {
-      // تم التعديل للمسار الصحيح في Laravel
+
       final response = await _networkService.get('/apartments');
 
-      // التعامل مع البيانات سواء كانت قائمة مباشرة أو داخل مفتاح data
+
       if (response.data is List) {
         return response.data;
       } else if (response.data is Map && response.data['data'] != null) {
@@ -263,7 +218,7 @@ class ApiRepository {
     }
   }
 
-  // 2. حذف شقة (يتوافق مع Route::delete('/apartments/{id}'))
+
   Future<Map<String, dynamic>> deleteProperty(int id) async {
     try {
       final response = await _networkService.delete('/apartments/$id');
@@ -279,7 +234,7 @@ class ApiRepository {
     }
   }
 
-  // 3. تحديث شقة (يتوافق مع Route::put('/apartments/{id}'))
+
   Future<Map<String, dynamic>> updateProperty(int id, Map<String, dynamic> data) async {
     try {
       final response = await _networkService.put('/apartments/$id', data: data);
@@ -321,26 +276,9 @@ class ApiRepository {
       return {'success': false, 'message': 'You must book first to review'};
     }
   }
-  // This matches your Laravel 'store' method in BookingController
-  Future<Map<String, dynamic>> submitBookingRequest(int apartmentId, DateTime start, DateTime end) async {
-    try {
-      final response = await _networkService.post('/bookings', data: {
-        'apartment_id': apartmentId,
-        'start_date': start.toIso8601String().split('T')[0], // YYYY-MM-DD
-        'end_date': end.toIso8601String().split('T')[0],     // YYYY-MM-DD
-      });
 
-      // Success code 201 as returned by your Laravel code
-      return {'success': true, 'data': response.data};
-    } on DioException catch (e) {
-      // Handling "Apartment not available" 422 error from your checkAvailability
-      return {
-        'success': false,
-        'message': e.response?.data['message'] ?? 'Booking failed'
-      };
-    }
-  }
-  // Matches your Laravel: public function store(Request $request)
+
+
   Future<Map<String, dynamic>> sendBookingRequest(int apartmentId, DateTimeRange range) async {
     try {
       final response = await _networkService.post('/bookings', data: {
@@ -361,5 +299,57 @@ class ApiRepository {
       };
     }
   }
+  Future<Response> getApartments({Map<String, dynamic>? filters}) async {
+    return await _networkService.get('/apartments', queryParameters: filters);
+  }
+
+  Future<Map<String, dynamic>> getProvinces() async {
+    try {
+      final response = await _networkService.get('/provinces');
+
+      var rawData = response.data;
+      List<dynamic> list = [];
+      if (rawData is Map) {
+        list = rawData['provinces'] ?? rawData['data'] ?? [];
+      } else if (rawData is List) {
+        list = rawData;
+      }
+      return {'success': true, 'data': list};
+    } catch (e) {
+      return {'success': false, 'data': [], 'message': 'Failed to load provinces'};
+    }
+  }
+
+  Future<Map<String, dynamic>> getCities(int provinceId) async {
+    try {
+      final response = await _networkService.get('/provinces/$provinceId/cities');
+      var rawData = response.data;
+      List<dynamic> list = [];
+      if (rawData is Map) {
+        list = rawData['cities'] ?? rawData['data'] ?? [];
+      } else if (rawData is List) {
+        list = rawData;
+      }
+      return {'success': true, 'data': list};
+    } catch (e) {
+      return {'success': false, 'data': [], 'message': 'Failed to load cities'};
+    }
+  }
+  Future<Map<String, dynamic>> createApartment(Map<String, dynamic> data, List<File> images) async {
+    try {
+      FormData formData = FormData.fromMap(data);
+      for (var image in images) {
+        formData.files.add(MapEntry(
+          'images[]',
+          await MultipartFile.fromFile(image.path, contentType: MediaType('image', 'jpeg')),
+        ));
+      }
+      final response = await _networkService.post('/apartments', data: formData);
+      return {'success': true, 'data': response.data};
+    } catch (e) {
+      return {'success': false, 'message': 'Failed to create apartment'};
+    }
+  }
+
 
 }

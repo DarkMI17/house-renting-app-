@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:house_rent_app_002/pages/signup.dart';
-import '../services/api_repository..dart';
+import '../services/api_repository.dart';
 import 'homePage.dart';
 
 class LoginPage extends StatefulWidget {

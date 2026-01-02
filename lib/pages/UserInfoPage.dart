@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../services/api_repository..dart';
+import '../services/api_repository.dart';
 import 'AddPropertyPage.dart';
 import 'login.dart';
 import '../services/config.dart';
