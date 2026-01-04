@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:dio/dio.dart'; // Standard import for Response and DioException
 import 'package:flutter/material.dart';
@@ -5,10 +6,11 @@ import 'dart:convert';
 import 'network_service.dart';
 import 'package:house_rent_app_002/services/services/storage_service.dart';
 import 'package:http_parser/http_parser.dart';
+//import 'MyPropertiesPage.dart';
 class ApiRepository {
   final NetworkService _networkService = NetworkService();
 
-  // 1. Login Logic
+// 1. Login Logic
   Future<Map<String, dynamic>> login(String phone, String password) async {
     try {
       print("Sending Login Request for: $phone");
@@ -24,15 +26,15 @@ class ApiRepository {
 
       if (responseData['access_token'] != null || responseData['message'] == 'Login successful') {
 
-        // إضافة حقل success يدوياً لكي تفهمه صفحة الـ LoginPage
+// إضافة حقل success يدوياً لكي تفهمه صفحة الـ LoginPage
         responseData['success'] = true;
 
-        // حفظ التوكن
+// حفظ التوكن
         String token = responseData['access_token'] ?? '';
         await StorageService.saveToken(token);
         print("Token Saved: $token");
 
-        // حفظ بيانات المستخدم
+// حفظ بيانات المستخدم
         if (responseData['user'] != null) {
           await StorageService.saveUser(jsonEncode(responseData['user']));
           print(" User Data Saved");
@@ -102,7 +104,7 @@ class ApiRepository {
       final Map<String, dynamic> responseData = response.data;
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        /*String token = responseData['access_token'] ?? '';
+/*String token = responseData['access_token'] ?? '';
         await StorageService.saveToken(token);
         if (responseData['user'] != null) {
           await StorageService.saveUser(jsonEncode(responseData['user']));
@@ -129,7 +131,7 @@ class ApiRepository {
       return {'success': false, 'message': 'An unexpected error occurred'};
     }
   }
-  // 3. Logout
+// 3. Logout
   Future<void> logout() async {
     await StorageService.logout();
   }
@@ -142,14 +144,14 @@ class ApiRepository {
     }
   }
 
-  // 4. UPLOAD PROPERTY
+// 4. UPLOAD PROPERTY
 
   Future<Map<String, dynamic>> addPropertyWithImages(Map<String, dynamic> data, List<File> images) async {
     try {
-      // 1. Initialize FormData with text fields (title, price, city_id, etc.)
+// 1. Initialize FormData with text fields (title, price, city_id, etc.)
       FormData formData = FormData.fromMap(data);
 
-      // 2. Attach all selected images to the same FormData object
+// 2. Attach all selected images to the same FormData object
       for (var image in images) {
         formData.files.add(MapEntry(
           'images[]', // The key name expected by the server array
@@ -160,16 +162,16 @@ class ApiRepository {
         ));
       }
 
-      // 3. Send a single POST request containing both data and files
+// 3. Send a single POST request containing both data and files
       final response = await _networkService.post(
         '/apartments',
         data: formData,
       );
 
-      // Return the server response as a Map
+// Return the server response as a Map
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      // Specifically handle server-side validation errors (like 422)
+// Specifically handle server-side validation errors (like 422)
       return {
         'success': false,
         'message': e.response?.data['message'] ?? 'Validation failed'
@@ -181,18 +183,18 @@ class ApiRepository {
       };
     }
   }
-  // 4. Stored User
+// 4. Stored User
   Future<Map<String, dynamic>?> getStoredUser() async {
     final userStr = StorageService.getUser();
     return userStr != null ? jsonDecode(userStr) : null;
   }
 
-  // 6. Manually update stored user data
+// 6. Manually update stored user data
   Future<void> updateStoredUser(Map<String, dynamic> userData) async {
-    // Encodes the Map into a JSON string and saves it via StorageService
+// Encodes the Map into a JSON string and saves it via StorageService
     await StorageService.saveUser(jsonEncode(userData));
   }
-  // 5. Get Profile
+// 5. Get Profile
   Future<Map<String, dynamic>> getProfile() async {
     final response = await _networkService.get('/profile');
     return response.data as Map<String, dynamic>;
@@ -251,19 +253,6 @@ class ApiRepository {
     }
   }
 
-  Future<Map<String, dynamic>> bookApartment(int apartmentId, DateTimeRange dates) async {
-    try {
-      final response = await _networkService.post('/bookings', data: {
-        'apartment_id': apartmentId,
-        'start_date': dates.start.toIso8601String(),
-        'end_date': dates.end.toIso8601String(),
-      });
-      return {'success': true, 'data': response.data};
-    } catch (e) {
-      return {'success': false, 'message': 'Booking failed'};
-    }
-  }
-
   Future<Map<String, dynamic>> addReview(int apartmentId, double rating, String comment) async {
     try {
       final response = await _networkService.post('/reviews', data: {
@@ -278,27 +267,155 @@ class ApiRepository {
   }
 
 
-
-  Future<Map<String, dynamic>> sendBookingRequest(int apartmentId, DateTimeRange range) async {
+ /* Future<Map<String, dynamic>> sendBookingRequest(
+      int apartmentId,
+      DateTimeRange range,
+      ) async {
     try {
       final response = await _networkService.post('/bookings', data: {
         'apartment_id': apartmentId,
-        'start_date': range.start.toIso8601String().split('T')[0], // YYYY-MM-DD
-        'end_date': range.end.toIso8601String().split('T')[0],     // YYYY-MM-DD
+        'start_date': range.start.toIso8601String().split('T')[0],
+        'end_date': range.end.toIso8601String().split('T')[0],
       });
 
       return {
         'success': true,
-        'data': response.data
+        'data': response.data,
       };
     } on DioException catch (e) {
 
+      print('BOOKING ERROR STATUS: ${e.response?.statusCode}');
+      print('BOOKING ERROR DATA: ${e.response?.data}');
+
       return {
         'success': false,
-        'message': e.response?.data['message'] ?? 'This date is already booked!'
+        'message': e.response?.data['message']
+            ?? e.response?.data['error']
+            ?? 'Booking failed',
+      };
+    } catch (e) {
+      print('UNEXPECTED BOOKING ERROR: $e');
+      return {
+        'success': false,
+        'message': 'Unexpected error occurred',
+      };
+    }
+  }*/
+  /*Future<Map<String, dynamic>> sendBookingRequest(
+      int apartmentId,
+      DateTimeRange range,
+      ) async {
+    try {
+      final response = await _networkService.post(
+        '/bookings',
+        data: {
+          'apartment_id': apartmentId,
+          'start_date': range.start.toIso8601String().split('T')[0],
+          'end_date': range.end.toIso8601String().split('T')[0],
+        },
+      );
+
+      return {
+        'success': true,
+        'data': response.data,
+      };
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      final data = e.response?.data;
+
+
+      if (status == 409) {
+        return {
+          'success': false,
+          'code': 'DATE_CONFLICT',
+          'message': data['message'] ?? 'This date is already booked',
+        };
+      }
+
+
+      if (status == 401) {
+        return {
+          'success': false,
+          'code': 'UNAUTHORIZED',
+          'message': 'Please login first',
+        };
+      }
+
+      if (status == 422) {
+        return {
+          'success': false,
+          'code': 'VALIDATION_ERROR',
+          'message': data['message'] ?? 'Invalid booking data',
+        };
+      }
+
+
+      return {
+        'success': false,
+        'code': 'UNKNOWN',
+        'message': data?['message'] ?? 'Booking failed',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'code': 'EXCEPTION',
+        'message': 'Unexpected error occurred',
+      };
+    }
+  }*/
+
+  Future<Map<String, dynamic>> sendBookingRequest(
+      int apartmentId,
+      DateTimeRange range,
+      ) async {
+    try {
+      // تحويل التواريخ للـ format yyyy-MM-dd
+      final startDate = range.start.toIso8601String().split('T')[0];
+      final endDate = range.end.toIso8601String().split('T')[0];
+
+      final response = await _networkService.post(
+        '/bookings',
+        data: {
+          'apartment_id': apartmentId,
+          'start_date': startDate,
+          'end_date': endDate,
+        },
+      );
+
+      // كل شيء تمام
+      return {
+        'success': true,
+        'data': response.data,
+      };
+    } on DioException catch (e) {
+      // هنا نتأكد أن كل الأخطاء تتحول لرسالة مفهومة
+      String message = 'Booking failed';
+      int? statusCode = e.response?.statusCode;
+      var responseData = e.response?.data;
+
+      if (statusCode == 422 && responseData != null && responseData['message'] != null) {
+        message = responseData['message']; // رسائل Laravel validation
+      } else if (statusCode != null) {
+        message = 'Error $statusCode: ${responseData?['message'] ?? 'Unexpected error'}';
+      }
+
+      print('BOOKING ERROR STATUS: $statusCode');
+      print('BOOKING ERROR DATA: $responseData');
+
+      return {
+        'success': false,
+        'message': message,
+      };
+    } catch (e) {
+      print('UNEXPECTED BOOKING ERROR: $e');
+      return {
+        'success': false,
+        'message': 'Unexpected error occurred',
       };
     }
   }
+
+
   Future<Response> getApartments({Map<String, dynamic>? filters}) async {
     return await _networkService.get('/apartments', queryParameters: filters);
   }
@@ -352,4 +469,131 @@ class ApiRepository {
   }
 
 
-}
+
+  Future<Map<String, dynamic>> getMyApartmentData() async {
+    try {
+      // الاتصال بالمسار الذي حددتِه في Laravel
+      final response = await _networkService.get('/my-properties');
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      return {
+        'status': false,
+        'message': e.response?.data['message'] ?? 'Error connecting to server',
+        'data': null
+      };
+    }
+  }
+  // جلب طلبات الحجز الخاصة بالمالك
+  Future<List<dynamic>> getOwnerBookingRequests() async {
+    try {
+      final response = await _networkService.get('/owner/booking-requests');
+      return response.data as List<dynamic>;
+    } catch (e) {
+      return [];
+    }
+  }
+
+// الموافقة على طلب
+  Future<Map<String, dynamic>> approveBooking(int id) async {
+    try {
+      final response = await _networkService.post('/bookings/$id/approve');
+      return {'success': true, 'message': response.data['message']};
+    } catch (e) {
+      return {'success': false, 'message': 'Failed to approve'};
+    }
+  }
+
+// رفض طلب
+  Future<Map<String, dynamic>> rejectBooking(int id) async {
+    try {
+      final response = await _networkService.post('/bookings/$id/reject');
+      return {'success': true, 'message': response.data['message']};
+    } catch (e) {
+      return {'success': false, 'message': 'Failed to reject'};
+    }
+  }
+
+
+
+
+
+}/*import 'package:dio/dio.dart' as dio_service;
+import 'package:get/get.dart' hide Response, FormData, MultipartFile;
+import 'package:house_rent_app_002/services/services/storage_service.dart';
+import 'config.dart';
+import '../pages/login.dart';
+import 'package:dio/dio.dart';
+class NetworkService {
+  static final NetworkService _instance = NetworkService._internal();
+
+  factory NetworkService() => _instance;
+
+  NetworkService._internal();
+
+  late dio_service.Dio _dio;
+  bool _isInitialized = false;
+
+  void initialize() {
+    if (_isInitialized) return;
+
+    _dio = dio_service.Dio(
+      dio_service.BaseOptions(
+        baseUrl: ApiConfig.baseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+      ),
+    );
+
+
+    _dio.interceptors.add(dio_service.InterceptorsWrapper(
+      onRequest: (options, handler) {
+
+        final token = StorageService.getToken();
+        if (token != null) {
+          options.headers['Authorization'] = 'Bearer $token';
+        }
+        options.headers['Accept'] = 'application/json';
+        return handler.next(options);
+      },
+      onError: (dio_service.DioException error, handler) {
+
+        if (error.response?.statusCode == 401) {
+          StorageService.logout();
+          Get.offAll(() => const LoginPage());
+        }
+        return handler.next(error);
+      },
+    ));
+    _isInitialized = true;
+  }
+
+  Future<dio_service.Response> get(String path, {Map<String, dynamic>? queryParameters}) async {
+    if (!_isInitialized) initialize();
+
+    return await _dio.get(path, queryParameters: queryParameters);
+  }
+
+  Future<Response> post(String path, {dynamic data}) async {
+    if (!_isInitialized) initialize();
+    return await _dio.post(path, data: data);
+  }
+
+
+  Future<Response> delete(String path, {Object? data, Map<String,
+      dynamic>? queryParameters, Options? options}) async {
+    return await _dio.delete(
+        path, data: data, queryParameters: queryParameters, options: options);
+  }
+
+  Future<Response> put(String path, {Object? data, Map<String,
+      dynamic>? queryParameters, Options? options}) async {
+    return await _dio.put(
+        path, data: data, queryParameters: queryParameters, options: options);
+  }
+
+
+
+
+
+
+}*/

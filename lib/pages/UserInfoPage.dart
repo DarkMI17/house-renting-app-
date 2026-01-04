@@ -4,6 +4,8 @@ import '../services/api_repository.dart';
 import 'AddPropertyPage.dart';
 import 'login.dart';
 import '../services/config.dart';
+import 'MyPropertiesPage.dart';
+import 'BookingRequestsPage.dart';
 class UserInfoPage extends StatefulWidget {
   const UserInfoPage({super.key});
 
@@ -131,50 +133,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
 
     );
   }
-/*
-  Widget _buildProfileHeader() {
-    // 1. استخراج اسم الصورة من بيانات المستخدم
-    String? avatarName = userData?['avatar'];
-    String fullImageUrl;
 
-    // 2. بناء الرابط الكامل (تأكدي من تغيير الـ IP لعنوان جهازك الحقيقي)
-    if (avatarName != null && avatarName.contains('avatars/')) {
-      // إذا كانت الصورة مخزنة عبر نظام التخزين (Storage)
-      fullImageUrl = "baseUrl/storage/$avatarName";
-    } else {
-      // إذا كانت الصورة مخزنة في المجلد العام (Public Uploads)
-      fullImageUrl = "baseUrl/uploads/avatars/$avatarName";
-    }
-    print("DEBUG: Profile Image URL -> $fullImageUrl");
-    // 3. دمج المنطق مع التصميم (UI)
-    return Center(
-      child: Column(
-        children: [
-          CircleAvatar(
-            radius: 50,
-            backgroundColor: Colors.teal,
-            // عرض الصورة من الشبكة إذا كانت موجودة وليست الافتراضية
-            backgroundImage: (avatarName != null && avatarName != 'default_avatar.png')
-                ? NetworkImage(fullImageUrl)
-                : null,
-            // عرض أيقونة الشخص فقط إذا لم تكن هناك صورة
-            child: (avatarName == null || avatarName == 'default_avatar.png')
-                ? const Icon(Icons.person, size: 60, color: Colors.white)
-                : null,
-          ),
-          const SizedBox(height: 15),
-          Text(
-            '${userData?['first_name'] ?? 'User'} ${userData?['last_name'] ?? ''}',
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          Text(
-            userData?['role']?.toString().toUpperCase() ?? 'TENANT',
-            style: const TextStyle(color: Colors.grey, letterSpacing: 1.2),
-          ),
-        ],
-      ),
-    );
-  }*/
   Widget _buildProfileHeader() {
     String? avatarName = userData?['avatar'];
 
@@ -240,6 +199,11 @@ class _UserInfoPageState extends State<UserInfoPage> {
     );
   }
   Widget _buildManagementSection() {
+    // نقوم بالتحقق من الدور أولاً؛ إذا لم يكن owner، لا نعرض هذا القسم أو نعرض شيئاً آخر
+    bool isOwner = userData?['role']?.toString().toLowerCase() == 'owner';
+
+    if (!isOwner) return const SizedBox.shrink(); // إخفاء القسم للمستأجرين
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -255,22 +219,38 @@ class _UserInfoPageState extends State<UserInfoPage> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
           child: Column(
             children: [
+              // الخيار الأول: عرض العقارات
               ListTile(
                 leading: const Icon(Icons.home_work, color: Colors.teal),
                 title: const Text('My Properties'),
                 subtitle: const Text('Edit or delete your listings'),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                 onTap: () {
-                  // Get.to(() => const MyPropertiesPage()); // سننشئها في الخطوة القادمة
+                  Get.to(() => const MyPropertiesPage());
                 },
               ),
               const Divider(height: 1),
+
+              // الخيار الثاني: إضافة عقار جديد
               ListTile(
                 leading: const Icon(Icons.add_box, color: Colors.teal),
                 title: const Text('Add New Property'),
                 trailing: const Icon(Icons.add, size: 20),
                 onTap: () {
                   Get.to(() => const AddPropertyPage());
+                },
+              ),
+              const Divider(height: 1),
+
+              // الخيار الثالث (الجديد): طلبات الحجز
+              ListTile(
+                leading: const Icon(Icons.notifications_active, color: Colors.teal),
+                title: const Text('Booking Requests'),
+                subtitle: const Text('Manage who wants to rent your units'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  // تأكدي من استيراد ملف صفحة الطلبات في الأعلى
+                  Get.to(() => const BookingRequestsPage());
                 },
               ),
             ],

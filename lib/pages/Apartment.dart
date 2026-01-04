@@ -1,15 +1,17 @@
 class Apartment {
   final int id;
-  final int price;
+  final double price; // تم تغييره لـ double لأن الباك آند يستخدم float
   final String governorate;
   final String city;
-  final int space;
-  final String imagePath;
-  // إضافة الحقول الأخرى إذا كنتِ تستخدمينها في الواجهة
+  final double space; // تم تغييره لـ double ليتوافق مع 'area' في الباك آند
+  final List<String> images; // الباك آند يرسل مصفوفة صور وليس مساراً واحداً
   final String? title;
   final String? description;
   final int? numberOfRooms;
+  final int? numberOfBathrooms;
+  final String? addressDetails; // إضافة الحقل المفقود ليتوافق مع address_details
   final bool hasElevator;
+  final bool hasBalcony;
 
   Apartment({
     required this.id,
@@ -17,61 +19,42 @@ class Apartment {
     required this.governorate,
     required this.city,
     required this.space,
-    required this.imagePath,
+    required this.images,
     this.title,
     this.description,
     this.numberOfRooms,
+    this.numberOfBathrooms,
+    this.addressDetails,
     required this.hasElevator,
+    required this.hasBalcony,
   });
 
   factory Apartment.fromJson(Map<String, dynamic> json) {
-    // --- 1. منطق معالجة وتنظيف رابط الصورة ---
-    String rawPath = '';
-    if (json['main_image'] != null && json['main_image']['path'] != null) {
-      rawPath = json['main_image']['path'].toString();
-    } else if (json['image_path'] != null) {
-      rawPath = json['image_path'].toString();
+    // معالجة الصور القادمة كـ Array من الباك آند
+    List<String> imagesList = [];
+    if (json['images'] != null) {
+      imagesList = List<String>.from(json['images']);
     }
 
-    String cleanedPath = rawPath
-        .replaceAll('[', '')    // حذف [
-        .replaceAll(']', '')    // حذف ]
-        .replaceAll('"', '')    // حذف "
-        .replaceAll('\\', '')   // حذف الباك سلاش
-        .replaceAll('//', '/'); // تصحيح السلاش المزدوج
-
-    // تصحيح الـ IP (تأكدي من مطابقة الـ IP لجهازك)
-    String correctedPath = cleanedPath.replaceAll('localhost', '192.168.1.7');
-
-    // إذا كان الرابط لا يبدأ بـ http، نقوم بإضافة الـ Base URL (اختياري حسب إعداداتك)
-    if (correctedPath.isNotEmpty && !correctedPath.startsWith('http')) {
-      // correctedPath = "http://192.168.1.7:8000" + correctedPath;
-    }
-
-    // --- 2. إرجاع الكائن مع دمج الحقول ---
     return Apartment(
       id: int.tryParse(json['id'].toString()) ?? 0,
-      price: int.tryParse(json['price'].toString()) ?? 0,
-      // استخدام capitalize() التي عرفتيها سابقاً
-      governorate: (json['governorate']?.toString() ?? '').capitalize(),
-      city: (json['city']?.toString() ?? '').capitalize(),
-      space: int.tryParse(json['space']?.toString() ?? '0') ?? 0,
-      imagePath: correctedPath,
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
+      price: double.tryParse(json['price'].toString()) ?? 0.0,
+      // الباك آند يرسل 'province' و 'city' كـ Objects أحياناً، لذا نأخذ الاسم
+      governorate: json['province'] != null ? json['province']['name'].toString() : (json['governorate']?.toString() ?? ''),
+      city: json['city'] != null ? json['city']['name'].toString() : (json['city']?.toString() ?? ''),
+      space: double.tryParse(json['area']?.toString() ?? json['space']?.toString() ?? '0') ?? 0.0,
+      images: imagesList,
+      title: json['title'],
+      description: json['description'],
       numberOfRooms: int.tryParse(json['number_of_rooms']?.toString() ?? '0'),
-      // معالجة حقل الـ Boolean (المصعد)
-      hasElevator: json['has_elevator'] == 1 ||
-          json['has_elevator'] == true ||
-          json['has_elevator'].toString() == "1",
+      numberOfBathrooms: int.tryParse(json['number_of_bathrooms']?.toString() ?? '0'),
+      addressDetails: json['address_details'],
+      // تحويل القيم 0 و 1 إلى true و false
+      hasElevator: json['has_elevator'] == 1 || json['has_elevator'] == true,
+      hasBalcony: json['has_balcony'] == 1 || json['has_balcony'] == true,
     );
   }
-}
 
-// لا تنسي إضافة الـ Extension الخاص بكِ أسفل الملف لكي يعمل capitalize()
-extension StringExtension on String {
-  String capitalize() {
-    if (this.isEmpty) return this;
-    return "${this[0].toUpperCase()}${substring(1).toLowerCase()}";
-  }
+  // دالة للحصول على الصورة الأولى فقط للعرض المصغر
+  String get firstImage => images.isNotEmpty ? images[0] : "https://via.placeholder.com/300";
 }
