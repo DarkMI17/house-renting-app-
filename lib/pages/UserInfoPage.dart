@@ -6,6 +6,7 @@ import 'login.dart';
 import '../services/config.dart';
 import 'MyPropertiesPage.dart';
 import 'BookingRequestsPage.dart';
+import 'MyBookingsPage.dart';
 class UserInfoPage extends StatefulWidget {
   const UserInfoPage({super.key});
 
@@ -198,8 +199,9 @@ class _UserInfoPageState extends State<UserInfoPage> {
       ),
     );
   }
+/*
   Widget _buildManagementSection() {
-    // نقوم بالتحقق من الدور أولاً؛ إذا لم يكن owner، لا نعرض هذا القسم أو نعرض شيئاً آخر
+
     bool isOwner = userData?['role']?.toString().toLowerCase() == 'owner';
 
     if (!isOwner) return const SizedBox.shrink(); // إخفاء القسم للمستأجرين
@@ -242,7 +244,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
               ),
               const Divider(height: 1),
 
-              // الخيار الثالث (الجديد): طلبات الحجز
+
               ListTile(
                 leading: const Icon(Icons.notifications_active, color: Colors.teal),
                 title: const Text('Booking Requests'),
@@ -253,6 +255,78 @@ class _UserInfoPageState extends State<UserInfoPage> {
                   Get.to(() => const BookingRequestsPage());
                 },
               ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }*/
+  Widget _buildManagementSection() {
+    // التحقق من الدور
+    String role = userData?['role']?.toString().toLowerCase() ?? 'tenant';
+    bool isOwner = role == 'owner';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Text(
+              isOwner ? "Property Management" : "My Bookings & Activity",
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal)
+          ),
+        ),
+        Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          child: Column(
+            children: [
+              if (isOwner) ...[
+                // --- خيارات المالك فقط ---
+                ListTile(
+                  leading: const Icon(Icons.home_work, color: Colors.teal),
+                  title: const Text('My Properties'),
+                  subtitle: const Text('Manage your listings'),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () => Get.to(() => const MyPropertiesPage()),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.add_box, color: Colors.teal),
+                  title: const Text('Add New Property'),
+                  trailing: const Icon(Icons.add, size: 20),
+                  onTap: () => Get.to(() => const AddPropertyPage()),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.notifications_active, color: Colors.teal),
+                  title: const Text('Booking Requests'),
+                  subtitle: const Text('Manage rental requests'),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () => Get.to(() => const BookingRequestsPage()),
+                ),
+              ] else ...[
+                // --- خيارات المستأجر فقط (Tenant) ---
+                ListTile(
+                  leading: const Icon(Icons.bookmark_added, color: Colors.teal),
+                  title: const Text('My Bookings'),
+                  subtitle: const Text('View and manage your reservations'),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () {
+                    // سنقوم بإنشاء هذه الصفحة الآن
+                    Get.to(() => const MyBookingsPage());
+                  },
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.favorite, color: Colors.pink),
+                  title: const Text('Saved Properties'),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () {
+                    // خيار إضافي للمستأجر مستقبلاً
+                  },
+                ),
+              ],
             ],
           ),
         ),
