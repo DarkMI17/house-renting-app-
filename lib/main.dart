@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:house_rent_app_002/pages/ApartmentListPage.dart';
+import 'package:house_rent_app_002/pages/signup.dart';
 import 'package:house_rent_app_002/services/services/storage_service.dart';
 import 'services/network_service.dart';
 import 'pages/login.dart';
@@ -52,7 +53,8 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.teal),
 
-      home: const HomePage(),
+      //home: const HomePage(),
+      home: const SignUpPage(),
     );
   }
 }
