@@ -64,8 +64,8 @@ class _UserInfoPageState extends State<UserInfoPage> {
             'Sync Error',
             'Failed to load profile from server and no local data found.',
             snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.redAccent,
-            colorText: Colors.white,
+            backgroundColor: Theme.of(context).colorScheme.error,
+            colorText: Theme.of(context).colorScheme.onError,
           );
         }
       }
@@ -110,8 +110,20 @@ class _UserInfoPageState extends State<UserInfoPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('User Profile'),
-        backgroundColor: Colors.teal,
+        backgroundColor: Theme.of(context).colorScheme.primary, // بيجيب لون Tootie تلقائياً
+        foregroundColor: Theme.of(context).colorScheme.onPrimary, // بيخلي النص باللون البيج (الخلفية العكسية)
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(Get.isDarkMode ? Icons.light_mode : Icons.dark_mode),
+            onPressed: () {
+              Get.changeThemeMode(Get.isDarkMode ? ThemeMode.light : ThemeMode.dark);
+            },
+          ),
+        ],
+
+
+
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -126,6 +138,9 @@ class _UserInfoPageState extends State<UserInfoPage> {
             _buildInfoCard(),
             const SizedBox(height: 20),
             _buildManagementSection(),
+            const SizedBox(height: 20),
+            _buildAppSettingsSection(),
+
             const SizedBox(height: 30),
             _buildLogoutButton(),
           ],
@@ -159,7 +174,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
         children: [
           CircleAvatar(
             radius: 50,
-            backgroundColor: Colors.teal,
+            backgroundColor: Theme.of(context).colorScheme.secondary, // درجتك 009688
             backgroundImage: (avatarName != null && avatarName != 'default_avatar.png' && fullImageUrl.isNotEmpty)
                 ? NetworkImage(fullImageUrl)
                 : null,
@@ -273,7 +288,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: Text(
               isOwner ? "Property Management" : "My Bookings & Activity",
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal)
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color:Theme.of(context).colorScheme.secondary)
           ),
         ),
         Card(
@@ -284,7 +299,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
               if (isOwner) ...[
                 // --- خيارات المالك فقط ---
                 ListTile(
-                  leading: const Icon(Icons.home_work, color: Colors.teal),
+                  leading: Icon(Icons.home_work, color: Theme.of(context).colorScheme.secondary),
                   title: const Text('My Properties'),
                   subtitle: const Text('Manage your listings'),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
@@ -292,14 +307,14 @@ class _UserInfoPageState extends State<UserInfoPage> {
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading: const Icon(Icons.add_box, color: Colors.teal),
+                  leading: Icon(Icons.add_box, color: Theme.of(context).colorScheme.secondary),
                   title: const Text('Add New Property'),
                   trailing: const Icon(Icons.add, size: 20),
                   onTap: () => Get.to(() => const AddPropertyPage()),
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading: const Icon(Icons.notifications_active, color: Colors.teal),
+                  leading: Icon(Icons.notifications_active, color: Theme.of(context).colorScheme.secondary),
                   title: const Text('Booking Requests'),
                   subtitle: const Text('Manage rental requests'),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
@@ -308,7 +323,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
               ] else ...[
                 // --- خيارات المستأجر فقط (Tenant) ---
                 ListTile(
-                  leading: const Icon(Icons.bookmark_added, color: Colors.teal),
+                  leading: Icon(Icons.bookmark_added,color: Theme.of(context).colorScheme.secondary),
                   title: const Text('My Bookings'),
                   subtitle: const Text('View and manage your reservations'),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
@@ -341,8 +356,8 @@ class _UserInfoPageState extends State<UserInfoPage> {
         icon: const Icon(Icons.logout),
         label: Text(isLoggingOut ? 'Logging out...' : 'LOGOUT'),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.red.shade400,
-          foregroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.error,
+          foregroundColor: Theme.of(context).colorScheme.onError,
           padding: const EdgeInsets.symmetric(vertical: 15),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
@@ -351,15 +366,40 @@ class _UserInfoPageState extends State<UserInfoPage> {
   }
 
   Widget _buildInfoRow(IconData icon, String label, String value) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         children: [
-          Icon(icon, color: Colors.teal, size: 20),
+          Icon(icon, color: colorScheme.secondary, size: 20),
           const SizedBox(width: 15),
-          Text('$label:', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54)),
-          const Spacer(),
-          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+
+          // 1. النص الثابت (مثل Phone:)
+          Text(
+            '$label:',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface.withOpacity(0.6),
+            ),
+          ),
+
+          const SizedBox(width: 10), // مسافة بسيطة بين العنوان والقيمة
+
+          // 2. الحل السحري هنا: نضع القيمة داخل Expanded
+          // لكي لا تخرج عن حدود الشاشة وتسبب الـ overflow
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.end, // يجعل النص يذهب لليمين
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.onSurface,
+              ),
+              overflow: TextOverflow.ellipsis, // إذا كان النص طويلاً جداً يضع نقاط (...) بدل أن يكسر التصميم
+              maxLines: 1, // يحافظ على جمال السطر الواحد
+            ),
+          ),
         ],
       ),
     );
@@ -376,6 +416,45 @@ class _UserInfoPageState extends State<UserInfoPage> {
           TextButton(onPressed: _loadUserData, child: const Text("Retry")),
         ],
       ),
+    );
+  }
+  // --- ضيف هذه الدالة في نهاية الكلاس ---
+  Widget _buildAppSettingsSection() {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Text(
+            "App Settings",
+            style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.secondary
+            ),
+          ),
+        ),
+        Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          child: ListTile(
+            leading: Icon(
+                Get.isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                color: colorScheme.secondary
+            ),
+            title: const Text('Dark Mode Appearance'),
+            trailing: Switch(
+              value: Get.isDarkMode,
+              activeColor: colorScheme.primary,
+              onChanged: (val) {
+                Get.changeThemeMode(Get.isDarkMode ? ThemeMode.light : ThemeMode.dark);
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

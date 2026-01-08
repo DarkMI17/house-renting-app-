@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+/*import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/api_repository.dart';
 
@@ -174,6 +174,210 @@ class _MyPropertiesPageState extends State<MyPropertiesPage> {
       child: Text(
         label,
         style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+}*/
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import '../services/api_repository.dart';
+
+class MyPropertiesPage extends StatefulWidget {
+  const MyPropertiesPage({super.key});
+
+  @override
+  State<MyPropertiesPage> createState() => _MyPropertiesPageState();
+}
+
+class _MyPropertiesPageState extends State<MyPropertiesPage> {
+  final ApiRepository apiRepository = ApiRepository();
+
+  List<dynamic> myUnits = [];
+  bool isLoading = true;
+  String serverMessage = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOwnerUnits();
+  }
+
+  Future<void> _loadOwnerUnits() async {
+    try {
+      final response = await apiRepository.getMyApartmentData();
+
+      setState(() {
+        if (response['status'] == true && response['data'] != null) {
+          myUnits = response['data']['data'] ?? [];
+          serverMessage = response['message'] ?? "";
+        } else {
+          myUnits = [];
+          serverMessage = response['message'] ?? "No units found";
+        }
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+        serverMessage = "An unexpected error occurred";
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // جلب الثيم الموحد
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      backgroundColor: colorScheme.surface, // خلفية بيج
+      appBar: AppBar(
+        title: const Text("My Rental Units", style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: colorScheme.primary, // فيروزي
+        foregroundColor: Colors.white,
+        centerTitle: true,
+        elevation: 0,
+      ),
+      body: isLoading
+          ? Center(child: CircularProgressIndicator(color: colorScheme.primary))
+          : myUnits.isEmpty
+          ? _buildNoContentState(colorScheme)
+          : RefreshIndicator(
+        color: colorScheme.primary,
+        onRefresh: _loadOwnerUnits,
+        child: ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+          itemCount: myUnits.length,
+          itemBuilder: (context, index) {
+            final unit = myUnits[index];
+            return _unitCard(unit, colorScheme);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoContentState(ColorScheme colorScheme) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.inventory_2_outlined, size: 70, color: colorScheme.secondary.withOpacity(0.3)),
+          const SizedBox(height: 15),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              serverMessage,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, color: Colors.black54),
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextButton(
+            onPressed: _loadOwnerUnits,
+            child: Text("Refresh", style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold)),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _unitCard(Map<String, dynamic> unit, ColorScheme colorScheme) {
+    // منطق الألوان للحالات
+    Color adminStatusColor;
+    switch (unit['admin_status']) {
+      case 'approved': adminStatusColor = Colors.green; break;
+      case 'pending': adminStatusColor = Colors.orange; break;
+      case 'rejected': adminStatusColor = colorScheme.error; break; // استخدام لون الخطأ من الثيم
+      default: adminStatusColor = Colors.grey;
+    }
+
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.only(bottom: 15),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      color: Colors.white, // كرت أبيض نظيف فوق الخلفية البيج
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            _unitImageThumbnail(unit['images'], colorScheme),
+            const SizedBox(width: 15),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    unit['title'] ?? 'No Title',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: colorScheme.secondary), // عنابي
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.location_on, size: 12, color: colorScheme.primary.withOpacity(0.7)),
+                      const SizedBox(width: 4),
+                      Text(
+                        "${unit['city']['name']}, ${unit['province']['name']}",
+                        style: const TextStyle(color: Colors.grey, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      _badge(unit['admin_status'].toString().toUpperCase(), adminStatusColor),
+                      if (unit['is_booked'] == true) ...[
+                        const SizedBox(width: 5),
+                        _badge("BOOKED", colorScheme.primary), // استخدام الفيروزي لتمييز المحجوز
+                      ]
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              "${unit['price']} SYP",
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.primary, // فيروزي
+                  fontSize: 15),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _unitImageThumbnail(dynamic images, ColorScheme colorScheme) {
+    return Container(
+      width: 75,
+      height: 75,
+      decoration: BoxDecoration(
+        color: colorScheme.primary.withOpacity(0.05), // خلفية خفيفة جداً للفيروزي
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
+      ),
+      child: Icon(Icons.apartment_rounded, color: colorScheme.primary, size: 35),
+    );
+  }
+
+  Widget _badge(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        border: Border.all(color: color.withOpacity(0.5), width: 1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
       ),
     );
   }

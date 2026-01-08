@@ -1,5 +1,5 @@
 
-import 'package:flutter/material.dart';
+/*import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:get/get.dart';
 import 'dart:io';
@@ -302,6 +302,351 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
         onChanged: onChanged,
         controlAffinity: ListTileControlAffinity.leading,
         activeColor: Colors.teal,
+        contentPadding: EdgeInsets.zero,
+      ),
+    );
+  }
+
+  Widget _buildImageGrid() {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 10, mainAxisSpacing: 10),
+      itemCount: _selectedImages.length,
+      itemBuilder: (context, index) => Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              image: DecorationImage(image: FileImage(_selectedImages[index]), fit: BoxFit.cover),
+            ),
+          ),
+          Positioned(
+            top: 2, right: 2,
+            child: GestureDetector(
+              onTap: () => _removeImage(index),
+              child: const CircleAvatar(radius: 12, backgroundColor: Colors.red, child: Icon(Icons.close, size: 16, color: Colors.white)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}*/
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:get/get.dart';
+import 'dart:io';
+import '../services/api_repository.dart';
+
+class AddPropertyPage extends StatefulWidget {
+  const AddPropertyPage({super.key});
+
+  @override
+  State<AddPropertyPage> createState() => _AddPropertyPageState();
+}
+
+class _AddPropertyPageState extends State<AddPropertyPage> {
+  final _formKey = GlobalKey<FormState>();
+
+  // المتحكمات (Controllers)
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
+  final TextEditingController _roomsController = TextEditingController();
+  final TextEditingController _bathroomsController = TextEditingController();
+  final TextEditingController _areaController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+
+  final ApiRepository _apiRepository = ApiRepository();
+
+  // متغيرات البيانات الديناميكية
+  List<dynamic> _provinces = [];
+  List<dynamic> _cities = [];
+  List<dynamic> _filteredCities = [];
+
+  int? _selectedProvinceId;
+  int? _selectedCityId;
+
+  bool _hasElevator = false;
+  bool _hasBalcony = false;
+  List<File> _selectedImages = [];
+  bool _isLoading = false;
+  bool _isLoadingData = false;
+
+  final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProvinces();
+  }
+
+  Future<void> _loadProvinces() async {
+    setState(() => _isLoadingData = true);
+    try {
+      final response = await _apiRepository.getProvinces();
+      if (response['success'] == true) {
+        setState(() => _provinces = List<dynamic>.from(response['data'] ?? []));
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Connection error while loading provinces');
+    } finally {
+      setState(() => _isLoadingData = false);
+    }
+  }
+
+  Future<void> _loadCities(int provinceId) async {
+    setState(() {
+      _isLoadingData = true;
+      _selectedCityId = null;
+    });
+    try {
+      final response = await _apiRepository.getCities(provinceId);
+      if (response['success'] == true) {
+        setState(() {
+          _cities = List<dynamic>.from(response['data'] ?? []);
+          _filteredCities = _cities;
+        });
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to load cities');
+    } finally {
+      setState(() => _isLoadingData = false);
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    if (image != null) {
+      if (_selectedImages.length < 5) {
+        setState(() => _selectedImages.add(File(image.path)));
+      } else {
+        Get.snackbar('Limit reached', 'Maximum 5 images allowed');
+      }
+    }
+  }
+
+  void _removeImage(int index) {
+    setState(() => _selectedImages.removeAt(index));
+  }
+
+  Future<void> _submitForm() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedCityId == null) {
+      Get.snackbar('Required', 'Please select a city');
+      return;
+    }
+    if (_selectedImages.isEmpty) {
+      Get.snackbar('Required', 'Please add at least one image');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final propertyData = {
+        'title': _titleController.text,
+        'description': _descriptionController.text,
+        'price': double.parse(_priceController.text),
+        'number_of_rooms': int.parse(_roomsController.text),
+        'number_of_bathrooms': int.parse(_bathroomsController.text),
+        'area': double.parse(_areaController.text),
+        'address_details': _addressController.text,
+        'province_id': _selectedProvinceId,
+        'city_id': _selectedCityId,
+        'has_elevator': _hasElevator ? 1 : 0,
+        'has_balcony': _hasBalcony ? 1 : 0,
+      };
+
+      final response = await _apiRepository.createApartment(propertyData, _selectedImages);
+
+      if (response['success'] == true) {
+        Get.snackbar('Success', 'Property listed successfully',
+            backgroundColor: Colors.green, colorText: Colors.white);
+        Future.delayed(const Duration(seconds: 2), () => Get.back());
+      } else {
+        Get.snackbar('Error', response['message'] ?? 'Failed to list property');
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'An error occurred while uploading');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // جلب ألوان الثيم المحددة في AppTheme
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      backgroundColor: colorScheme.surface, // البيج
+      appBar: AppBar(
+        title: const Text('Add New Property', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: colorScheme.primary, // الفيروزي
+        foregroundColor: Colors.white,
+        centerTitle: true,
+        elevation: 0,
+      ),
+      body: _isLoadingData && _provinces.isEmpty
+          ? Center(child: CircularProgressIndicator(color: colorScheme.primary))
+          : SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Property Details',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.primary)),
+              const SizedBox(height: 20),
+
+              _buildTextField(_titleController, 'Property Title*', Icons.title, colorScheme),
+              const SizedBox(height: 15),
+              _buildTextField(_descriptionController, 'Description*', Icons.description, colorScheme, maxLines: 3),
+              const SizedBox(height: 15),
+              _buildTextField(_priceController, 'Price (\$/month)*', Icons.attach_money, colorScheme, isNumber: true),
+              const SizedBox(height: 15),
+
+              _buildProvinceDropdown(colorScheme),
+              const SizedBox(height: 15),
+
+              _buildCityDropdown(colorScheme),
+              const SizedBox(height: 15),
+
+              _buildTextField(_addressController, 'Address Details*', Icons.location_on, colorScheme),
+              const SizedBox(height: 25),
+
+              Text('Property Features',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.primary)),
+              const SizedBox(height: 15),
+
+              Row(
+                children: [
+                  Expanded(child: _buildTextField(_roomsController, 'Rooms*', Icons.bed, colorScheme, isNumber: true)),
+                  const SizedBox(width: 10),
+                  Expanded(child: _buildTextField(_bathroomsController, 'Baths*', Icons.bathtub, colorScheme, isNumber: true)),
+                ],
+              ),
+              const SizedBox(height: 15),
+              _buildTextField(_areaController, 'Area (sq ft)*', Icons.square_foot, colorScheme, isNumber: true),
+              const SizedBox(height: 20),
+
+              Row(
+                children: [
+                  Expanded(child: _buildCheckbox('Elevator', _hasElevator, (v) => setState(() => _hasElevator = v!), colorScheme)),
+                  const SizedBox(width: 10),
+                  Expanded(child: _buildCheckbox('Balcony', _hasBalcony, (v) => setState(() => _hasBalcony = v!), colorScheme)),
+                ],
+              ),
+              const SizedBox(height: 30),
+
+              Text('Property Images',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.primary)),
+              const SizedBox(height: 10),
+
+              _buildImageGrid(),
+              const SizedBox(height: 15),
+
+              if (_selectedImages.length < 5)
+                MaterialButton(
+                  onPressed: _pickImage,
+                  color: colorScheme.primary.withOpacity(0.1),
+                  textColor: colorScheme.primary,
+                  height: 50,
+                  minWidth: double.infinity,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [Icon(Icons.photo_library), SizedBox(width: 10), Text('Add Images')],
+                  ),
+                ),
+
+              const SizedBox(height: 40),
+
+              MaterialButton(
+                onPressed: _isLoading ? null : _submitForm,
+                color: colorScheme.primary,
+                textColor: Colors.white,
+                minWidth: double.infinity,
+                height: 55,
+                elevation: 2,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text('LIST PROPERTY', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- أدوات مساعدة لبناء الواجهة (UI Helpers) ---
+
+  Widget _buildTextField(TextEditingController controller, String label, IconData icon, ColorScheme colorScheme, {bool isNumber = false, int maxLines = 1}) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+      maxLines: maxLines,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: colorScheme.secondary), // العنابي (Tootie)
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: colorScheme.primary, width: 2), // الفيروزي عند التركيز
+        ),
+      ),
+      validator: (v) => (v == null || v.isEmpty) ? 'Required field' : null,
+    );
+  }
+
+  Widget _buildProvinceDropdown(ColorScheme colorScheme) {
+    return DropdownButtonFormField<int>(
+      value: _selectedProvinceId,
+      decoration: InputDecoration(
+        labelText: 'Province*',
+        prefixIcon: Icon(Icons.map, color: colorScheme.secondary),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      items: _provinces.map((p) => DropdownMenuItem<int>(value: p['id'], child: Text(p['name']))).toList(),
+      onChanged: (val) {
+        setState(() => _selectedProvinceId = val);
+        if (val != null) _loadCities(val);
+      },
+    );
+  }
+
+  Widget _buildCityDropdown(ColorScheme colorScheme) {
+    return DropdownButtonFormField<int>(
+      value: _selectedCityId,
+      decoration: InputDecoration(
+        labelText: 'City*',
+        prefixIcon: Icon(Icons.location_city, color: colorScheme.secondary),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      items: _filteredCities.map((c) => DropdownMenuItem<int>(value: c['id'], child: Text(c['name']))).toList(),
+      onChanged: (val) => setState(() => _selectedCityId = val),
+      disabledHint: const Text("Select province first"),
+    );
+  }
+
+  Widget _buildCheckbox(String title, bool value, Function(bool?) onChanged, ColorScheme colorScheme) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade400),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: CheckboxListTile(
+        title: Text(title, style: const TextStyle(fontSize: 14)),
+        value: value,
+        onChanged: onChanged,
+        controlAffinity: ListTileControlAffinity.leading,
+        activeColor: colorScheme.primary, // الفيروزي
         contentPadding: EdgeInsets.zero,
       ),
     );

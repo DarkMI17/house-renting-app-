@@ -1,7 +1,7 @@
 class ApiConfig {
   //change this to your IP
-  static const String baseUrl = 'http://127.0.0.1:8000/api'; // CHANGE THIS
-  static const String imageBaseUrl = '127.0.0.1:8000';
+  static const String baseUrl = 'http://192.168.0.107:8000/api'; // CHANGE THIS
+  static const String imageBaseUrl = '192.168.0.107:8000';
   // API Endpoints
   static const String login = '/login';
   static const String register = '/register';

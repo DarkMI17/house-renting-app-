@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "402806012064",
+    "project_id": "apartmentsproject-ed2fd",
+    "storage_bucket": "apartmentsproject-ed2fd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:402806012064:android:85ccf7cd25c2b6d646f1c5",
+        "android_client_info": {
+          "package_name": "com.example.house_rent_app_002"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCDth_yJEsO9aAWsMOBkFxPbdCEsSm9IqI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:402806012064:android:42730133b9669cac46f1c5",
+        "android_client_info": {
+          "package_name": "com.example.market"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCDth_yJEsO9aAWsMOBkFxPbdCEsSm9IqI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
