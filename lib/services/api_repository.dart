@@ -24,8 +24,8 @@ class ApiRepository {
       print("Server Response: $responseData");
 
 
-      if (responseData['access_token'] != null || responseData['message'] == 'Login successful') {
-
+      if (responseData['access_token'] != null ||
+          responseData['message'] == 'Login successful') {
 // إضافة حقل success يدوياً لكي تفهمه صفحة الـ LoginPage
         responseData['success'] = true;
 
@@ -61,6 +61,7 @@ class ApiRepository {
       };
     }
   }
+
   Future<Map<String, dynamic>> register({
     required String phone,
     required String password,
@@ -73,7 +74,6 @@ class ApiRepository {
     File? avatar,
   }) async {
     try {
-
       Map<String, dynamic> dataMap = {
         'phone': phone,
         'password': password,
@@ -84,7 +84,9 @@ class ApiRepository {
         'role': role,
         'id_image': await MultipartFile.fromFile(
           idImage.path,
-          filename: idImage.path.split('/').last,
+          filename: idImage.path
+              .split('/')
+              .last,
         ),
       };
 
@@ -92,7 +94,9 @@ class ApiRepository {
       if (avatar != null) {
         dataMap['avatar'] = await MultipartFile.fromFile(
           avatar.path,
-          filename: avatar.path.split('/').last,
+          filename: avatar.path
+              .split('/')
+              .last,
         );
       }
 
@@ -113,7 +117,6 @@ class ApiRepository {
       }
 
       return {'success': false, 'message': 'Registration failed'};
-
     } on DioException catch (e) {
       String errorMessage = 'Validation failed';
       if (e.response?.data != null) {
@@ -131,10 +134,12 @@ class ApiRepository {
       return {'success': false, 'message': 'An unexpected error occurred'};
     }
   }
+
 // 3. Logout
   Future<void> logout() async {
     await StorageService.logout();
   }
+
   Future<Map<String, dynamic>> createProperty(Map<String, dynamic> data) async {
     try {
       final response = await _networkService.post('/apartments', data: data);
@@ -146,7 +151,8 @@ class ApiRepository {
 
 // 4. UPLOAD PROPERTY
 
-  Future<Map<String, dynamic>> addPropertyWithImages(Map<String, dynamic> data, List<File> images) async {
+  Future<Map<String, dynamic>> addPropertyWithImages(Map<String, dynamic> data,
+      List<File> images) async {
     try {
 // 1. Initialize FormData with text fields (title, price, city_id, etc.)
       FormData formData = FormData.fromMap(data);
@@ -157,7 +163,9 @@ class ApiRepository {
           'images[]', // The key name expected by the server array
           await MultipartFile.fromFile(
             image.path,
-            filename: image.path.split('/').last,
+            filename: image.path
+                .split('/')
+                .last,
           ),
         ));
       }
@@ -183,6 +191,7 @@ class ApiRepository {
       };
     }
   }
+
 // 4. Stored User
   Future<Map<String, dynamic>?> getStoredUser() async {
     final userStr = StorageService.getUser();
@@ -194,6 +203,7 @@ class ApiRepository {
 // Encodes the Map into a JSON string and saves it via StorageService
     await StorageService.saveUser(jsonEncode(userData));
   }
+
 // 5. Get Profile
   Future<Map<String, dynamic>> getProfile() async {
     final response = await _networkService.get('/profile');
@@ -201,10 +211,8 @@ class ApiRepository {
   }
 
 
-
   Future<List<dynamic>> getMyProperties() async {
     try {
-
       final response = await _networkService.get('/apartments');
 
 
@@ -237,7 +245,8 @@ class ApiRepository {
   }
 
 
-  Future<Map<String, dynamic>> updateProperty(int id, Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> updateProperty(int id,
+      Map<String, dynamic> data) async {
     try {
       final response = await _networkService.put('/apartments/$id', data: data);
       return {
@@ -253,21 +262,7 @@ class ApiRepository {
     }
   }
 
-  Future<Map<String, dynamic>> addReview(int apartmentId, double rating, String comment) async {
-    try {
-      final response = await _networkService.post('/reviews', data: {
-        'apartment_id': apartmentId,
-        'rating': rating.toInt(),
-        'comment': comment,
-      });
-      return {'success': true, 'message': 'Review added!'};
-    } catch (e) {
-      return {'success': false, 'message': 'You must book first to review'};
-    }
-  }
-
-
- /* Future<Map<String, dynamic>> sendBookingRequest(
+  /* Future<Map<String, dynamic>> sendBookingRequest(
       int apartmentId,
       DateTimeRange range,
       ) async {
@@ -364,10 +359,8 @@ class ApiRepository {
     }
   }*/
 
-  Future<Map<String, dynamic>> sendBookingRequest(
-      int apartmentId,
-      DateTimeRange range,
-      ) async {
+  Future<Map<String, dynamic>> sendBookingRequest(int apartmentId,
+      DateTimeRange range,) async {
     try {
       // تحويل التواريخ للـ format yyyy-MM-dd
       final startDate = range.start.toIso8601String().split('T')[0];
@@ -393,10 +386,12 @@ class ApiRepository {
       int? statusCode = e.response?.statusCode;
       var responseData = e.response?.data;
 
-      if (statusCode == 422 && responseData != null && responseData['message'] != null) {
+      if (statusCode == 422 && responseData != null &&
+          responseData['message'] != null) {
         message = responseData['message']; // رسائل Laravel validation
       } else if (statusCode != null) {
-        message = 'Error $statusCode: ${responseData?['message'] ?? 'Unexpected error'}';
+        message =
+        'Error $statusCode: ${responseData?['message'] ?? 'Unexpected error'}';
       }
 
       print('BOOKING ERROR STATUS: $statusCode');
@@ -433,13 +428,18 @@ class ApiRepository {
       }
       return {'success': true, 'data': list};
     } catch (e) {
-      return {'success': false, 'data': [], 'message': 'Failed to load provinces'};
+      return {
+        'success': false,
+        'data': [],
+        'message': 'Failed to load provinces'
+      };
     }
   }
 
   Future<Map<String, dynamic>> getCities(int provinceId) async {
     try {
-      final response = await _networkService.get('/provinces/$provinceId/cities');
+      final response = await _networkService.get(
+          '/provinces/$provinceId/cities');
       var rawData = response.data;
       List<dynamic> list = [];
       if (rawData is Map) {
@@ -452,22 +452,25 @@ class ApiRepository {
       return {'success': false, 'data': [], 'message': 'Failed to load cities'};
     }
   }
-  Future<Map<String, dynamic>> createApartment(Map<String, dynamic> data, List<File> images) async {
+
+  Future<Map<String, dynamic>> createApartment(Map<String, dynamic> data,
+      List<File> images) async {
     try {
       FormData formData = FormData.fromMap(data);
       for (var image in images) {
         formData.files.add(MapEntry(
           'images[]',
-          await MultipartFile.fromFile(image.path, contentType: MediaType('image', 'jpeg')),
+          await MultipartFile.fromFile(
+              image.path, contentType: MediaType('image', 'jpeg')),
         ));
       }
-      final response = await _networkService.post('/apartments', data: formData);
+      final response = await _networkService.post(
+          '/apartments', data: formData);
       return {'success': true, 'data': response.data};
     } catch (e) {
       return {'success': false, 'message': 'Failed to create apartment'};
     }
   }
-
 
 
   Future<Map<String, dynamic>> getMyApartmentData() async {
@@ -483,6 +486,7 @@ class ApiRepository {
       };
     }
   }
+
   // جلب طلبات الحجز الخاصة بالمالك
   Future<List<dynamic>> getOwnerBookingRequests() async {
     try {
@@ -510,41 +514,69 @@ class ApiRepository {
       return {'success': true, 'message': response.data['message']};
     } catch (e) {
       return {'success': false, 'message': 'Failed to reject'};
-    }}
-
-    Future<List<dynamic>> fetchUserReservations() async {
-      try {
-        final response = await _networkService.get('/my-bookings');
-        return response.data as List<dynamic>;
-      } catch (e) {
-        print("Error in fetchUserReservations: $e");
-        return [];
-      }
-    }
-
-
-    Future<Map<String, dynamic>> modifyReservationDates(int reservationId,
-        String start, String end) async {
-      try {
-        final response = await _networkService.put(
-            '/bookings/$reservationId', data: {
-          'start_date': start,
-          'end_date': end,
-        });
-        return {'success': true, 'data': response.data};
-      } catch (e) {
-        return {'success': false, 'message': 'Modification failed'};
-      }
-    }
-
-
-    Future<bool> removeUserReservation(int reservationId) async {
-      try {
-        await _networkService.delete('/bookings/$reservationId');
-        return true;
-      } catch (e) {
-        print("Error in removeUserReservation: $e");
-        return false;
-      }
     }
   }
+
+  Future<List<dynamic>> fetchUserReservations() async {
+    try {
+      final response = await _networkService.get('/my-bookings');
+      return response.data as List<dynamic>;
+    } catch (e) {
+      print("Error in fetchUserReservations: $e");
+      return [];
+    }
+  }
+
+
+  Future<Map<String, dynamic>> modifyReservationDates(int reservationId,
+      String start, String end) async {
+    try {
+      final response = await _networkService.put(
+          '/bookings/$reservationId', data: {
+        'start_date': start,
+        'end_date': end,
+      });
+      return {'success': true, 'data': response.data};
+    } catch (e) {
+      return {'success': false, 'message': 'Modification failed'};
+    }
+  }
+
+
+  Future<bool> removeUserReservation(int reservationId) async {
+    try {
+      await _networkService.delete('/bookings/$reservationId');
+      return true;
+    } catch (e) {
+      print("Error in removeUserReservation: $e");
+      return false;
+    }
+  }
+  //review
+  Future<Map<String, dynamic>> addReview(int apartmentId, double rating,
+      String comment) async {
+    try {
+      final response = await _networkService.post('/reviews', data: {
+        'apartment_id': apartmentId,
+        'rating': rating.toInt(),
+        'comment': comment,
+      });
+
+      return {
+        'success': true,
+        'message': response.data['message'] ?? 'Review added successfully!'
+      };
+    } on DioException catch (e) {
+      String errorMsg = e.response?.data['message'] ?? 'Failed to add review';
+      return {
+        'success': false,
+        'message': errorMsg
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'An unexpected error occurred'
+      };
+    }
+  }
+}
