@@ -1,132 +1,4 @@
-/*import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:house_rent_app_002/pages/ApartmentListPage.dart';
-import 'package:house_rent_app_002/services/services/storage_service.dart';
-import 'services/network_service.dart';
-import 'pages/login.dart';
-import 'pages/homePage.dart';
-import 'pages/ApartmentDetailsPage.dart';
-import 'pages/AppTheme.dart';
 /*
-void main() async {
-  // 1. ضمان تهيئة أدوات فلاتر قبل أي كود برمجي
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // 2. تشغيل المخزن (SharedPreferences)
-  await StorageService.init();
-
-  // 3. تشغيل محرك الشبكة (Dio)
-  NetworkService().initialize();
-
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    // نستخدم GetMaterialApp بدلاً من MaterialApp لدعم نظام التوكن والـ GetX
-    return GetMaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'House Renting App',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      // فحص التوكن: إذا موجود نذهب للرئيسية، إذا لا نذهب للوجن
-      home: StorageService.getToken() != null
-          ? const HomePage()
-          : const LoginPage(),
-    );
-  }
-}*/
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await StorageService.init();
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return GetMaterialApp(
-      debugShowCheckedModeBanner: false,
-      // التعديل هنا: استدعاء كلاس AppTheme بدلاً من ThemeData القديم
-      theme: AppTheme.light(),
-
-      // إذا كنتِ تريدين دعم الوضع الداكن مستقبلاً
-      darkTheme: AppTheme.dark(),
-
-      // لإجبار التطبيق على البدء بالثيم الفاتح (الفيروزي والبيج)
-      themeMode: ThemeMode.light,
-
-      home: const HomePage(),
-    );
-  }
-}
-*/
-/*
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'firebase_options.dart';
-import 'pages/AppTheme.dart';
-import 'pages/homePage.dart';
-import 'services/services/storage_service.dart';
-
-void main() async {
-  // 1. ضمان تهيئة أدوات فلاتر
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // 2. تشغيل الفايربيز باستخدام الإعدادات المولدة
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  // 3. تهيئة مخزن البيانات المحلي (SharedPreferences)
-  await StorageService.init();
-
-  // 4. إعدادات الإشعارات وجلب التوكن
-  FirebaseMessaging messaging = FirebaseMessaging.instance;
-
-  // طلب الإذن (ضروري لإظهار التنبيه للمستخدم)
-  await messaging.requestPermission(
-    alert: true,
-    badge: true,
-    sound: true,
-  );
-
-  // استخراج الـ Token وطباعته في الـ Console
-  String? token = await messaging.getToken();
-  print("---------- COPY THIS TOKEN ----------");
-  print(token);
-  print("-------------------------------------");
-
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return GetMaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Tootie Rent App',
-
-      // استخدام الثيمات التي صممناها (الفيروزي والعنابي)
-      theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
-
-      // نغيرها لـ system ليتمكن المستخدم من التبديل يدوياً من الإعدادات
-      themeMode: ThemeMode.system,
-
-      home: const HomePage(),
-    );
-  }
-}*/
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -203,6 +75,104 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  @override
+  Widget build(BuildContext context) {
+    return GetMaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Tootie Rent App',
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.system,
+      home: const HomePage(),
+    );
+  }
+}*/
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart'; // 1. إضافة الاستيراد
+import 'firebase_options.dart';
+import 'pages/AppTheme.dart';
+import 'pages/homePage.dart';
+import 'services/services/storage_service.dart';
+
+// 2. تعريف قناة الإشعارات للأندرويد (خارج أي كلاس)
+const AndroidNotificationChannel channel = AndroidNotificationChannel(
+  'high_importance_channel', // id
+  'High Importance Notifications', // title
+  description: 'This channel is used for important notifications.', // description
+  importance: Importance.max,
+  playSound: true,
+);
+
+// 3. تعريف المحرك الرئيسي للإشعارات المحلية
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  print("Handling a background message: ${message.messageId}");
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  // 4. إعداد القناة داخل الأندرويد لضمان ظهور الإشعار المنبثق والصوت
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+      ?.createNotificationChannel(channel);
+
+  // 5. إعداد إعدادات التهيئة للإشعارات المحلية
+  const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+  const InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid);
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
+  await StorageService.init();
+
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
+  await messaging.requestPermission(alert: true, badge: true, sound: true);
+
+  String? token = await messaging.getToken();
+  print("FCM Token: $token");
+
+  // 6. تعديل مستمع الرسائل في الـ Foreground
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    RemoteNotification? notification = message.notification;
+    AndroidNotification? android = message.notification?.android;
+
+    if (notification != null && android != null) {
+      // إظهار الإشعار في القائمة العلوية يدوياً
+      flutterLocalNotificationsPlugin.show(
+        notification.hashCode,
+        notification.title,
+        notification.body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            channel.id,
+            channel.name,
+            channelDescription: channel.description,
+            icon: android.smallIcon,
+            importance: Importance.max,
+            priority: Priority.high,
+            playSound: true,
+          ),
+        ),
+      );
+
+      // اختيارياً: إبقاء الـ Snackbar إذا كنتِ تحبينه
+      Get.snackbar(notification.title!, notification.body!,
+          snackPosition: SnackPosition.TOP, backgroundColor: Colors.teal, colorText: Colors.white);
+    }
+  });
+
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(

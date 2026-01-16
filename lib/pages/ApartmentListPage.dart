@@ -252,21 +252,83 @@ class _ApartmentListPageState extends State<ApartmentListPage> {
   List<dynamic> _apartments = [];
   bool _isLoading = true;
 
-  double? _maxPrice;
+  String? _priceRange;
   bool _hasElevator = false;
+  int? _minRooms;
+  bool _hasBalcony = false;
+  int? _selectedProvinceId;
+  int? _selectedCityId;
+
+  List<dynamic> _provinces = [];
+  List<dynamic> _cities = [];
+  bool _loadingProvinces = true;
 
   @override
   void initState() {
     super.initState();
     _fetchApartments();
+    _fetchProvinces();
+  }
+
+  Future<void> _fetchProvinces() async {
+    try {
+      final result = await _apiRepository.getProvinces();
+      if (result['success'] == true && result['data'] is List) {
+        setState(() {
+          _provinces = result['data'];
+          _loadingProvinces = false;
+        });
+      } else {
+        setState(() => _loadingProvinces = false);
+        print('Error fetching provinces: ${result['message']}');
+        Get.snackbar("Error", "Failed to load provinces");
+      }
+    } catch (e) {
+      setState(() => _loadingProvinces = false);
+      print('Error fetching provinces: $e');
+      Get.snackbar("Error", "Failed to load provinces");
+    }
+  }
+
+  Future<void> _fetchCities(int provinceId) async {
+    try {
+      final result = await _apiRepository.getCities(provinceId);
+      if (result['success'] == true && result['data'] is List) {
+        setState(() {
+          _cities = result['data'];
+          _selectedCityId = null;
+        });
+      } else {
+        print('Error fetching cities: ${result['message']}');
+        setState(() => _cities = []);
+        Get.snackbar("Info", "No cities found for this province");
+      }
+    } catch (e) {
+      print('Error fetching cities: $e');
+      setState(() => _cities = []);
+    }
   }
 
   Future<void> _fetchApartments() async {
     setState(() => _isLoading = true);
     try {
       Map<String, dynamic> filters = {};
-      if (_maxPrice != null) filters['max_price'] = _maxPrice;
+
+      if (_priceRange != null) {
+        if (_priceRange == 'under_100') {
+          filters['max_price'] = 100;
+        } else if (_priceRange == 'under_1000') {
+          filters['max_price'] = 1000;
+        } else if (_priceRange == 'under_10000') {
+          filters['max_price'] = 10000;
+        }
+      }
+
       if (_hasElevator) filters['has_elevator'] = 1;
+      if (_minRooms != null) filters['min_rooms'] = _minRooms;
+      if (_hasBalcony) filters['has_balcony'] = 1;
+      if (_selectedProvinceId != null) filters['province_id'] = _selectedProvinceId;
+      if (_selectedCityId != null) filters['city_id'] = _selectedCityId;
 
       final response = await _apiRepository.getApartments(filters: filters);
 
@@ -287,8 +349,22 @@ class _ApartmentListPageState extends State<ApartmentListPage> {
       });
     } catch (e) {
       setState(() => _isLoading = false);
+      print('Error: $e');
       Get.snackbar("Error", "Failed to load apartments");
     }
+  }
+
+  void _resetFilters() {
+    setState(() {
+      _priceRange = null;
+      _hasElevator = false;
+      _minRooms = null;
+      _hasBalcony = false;
+      _selectedProvinceId = null;
+      _selectedCityId = null;
+      _cities = [];
+    });
+    _fetchApartments();
   }
 
   @override
@@ -296,10 +372,10 @@ class _ApartmentListPageState extends State<ApartmentListPage> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface, // الخلفية البيج
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: const Text("Browse Apartments", style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: colorScheme.primary, // الفيروزي
+        backgroundColor: colorScheme.primary,
         foregroundColor: Colors.white,
         centerTitle: true,
         elevation: 0,
@@ -307,13 +383,45 @@ class _ApartmentListPageState extends State<ApartmentListPage> {
           IconButton(
             icon: const Icon(Icons.filter_list_rounded),
             onPressed: _showFilterSheet,
-          )
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _resetFilters,
+            tooltip: 'Reset Filters',
+          ),
         ],
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator(color: colorScheme.primary))
           : _apartments.isEmpty
-          ? const Center(child: Text("No apartments found matching your criteria."))
+          ? SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Container(
+          // تم إصلاح الخطأ هنا: تم إزالة Alignment(Center) واستبدالها بـ child: Center
+          height: MediaQuery.of(context).size.height * 0.7,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.search_off, size: 60, color: colorScheme.primary.withOpacity(0.5)),
+                const SizedBox(height: 15),
+                const Text("No apartments found"),
+                const SizedBox(height: 5),
+                Text("Try adjusting your filters", style: TextStyle(color: Colors.grey[600])),
+                const SizedBox(height: 10),
+                ElevatedButton.icon(
+                  onPressed: _resetFilters,
+                  icon: Icon(Icons.refresh, color: colorScheme.primary),
+                  label: Text("Reset Filters", style: TextStyle(color: colorScheme.primary)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.primary.withOpacity(0.1),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      )
           : ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
         itemCount: _apartments.length,
@@ -338,6 +446,7 @@ class _ApartmentListPageState extends State<ApartmentListPage> {
           Get.to(() => ApartmentDetailsPage(apartment: apartmentModel));
         },
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Stack(
@@ -364,6 +473,7 @@ class _ApartmentListPageState extends State<ApartmentListPage> {
             Padding(
               padding: const EdgeInsets.all(15),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
@@ -372,14 +482,15 @@ class _ApartmentListPageState extends State<ApartmentListPage> {
                       Expanded(
                         child: Text(
                           item['title'] ?? "No Title",
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.secondary), // العنابي
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.secondary),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      const SizedBox(width: 8),
                       Text(
                         "${item['price']} SYP",
-                        style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 16), // الفيروزي
+                        style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                     ],
                   ),
@@ -388,9 +499,13 @@ class _ApartmentListPageState extends State<ApartmentListPage> {
                     children: [
                       Icon(Icons.location_on, size: 14, color: colorScheme.primary.withOpacity(0.7)),
                       const SizedBox(width: 4),
-                      Text(
-                        "${item['city']?['name'] ?? ''}, ${item['province']?['name'] ?? ''}",
-                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                      Expanded(
+                        child: Text(
+                          "${item['city']?['name'] ?? ''}, ${item['province']?['name'] ?? ''}",
+                          style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
@@ -432,55 +547,201 @@ class _ApartmentListPageState extends State<ApartmentListPage> {
 
   void _showFilterSheet() {
     final colorScheme = Theme.of(context).colorScheme;
+    final TextEditingController minRoomsController = TextEditingController(
+      text: _minRooms?.toString() ?? '',
+    );
+
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
       backgroundColor: colorScheme.surface,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) => Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 30),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("Filter Results", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.primary)),
-              const SizedBox(height: 25),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: "Max Price",
-                  prefixIcon: Icon(Icons.attach_money, color: colorScheme.secondary),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: colorScheme.primary), borderRadius: BorderRadius.circular(12)),
-                ),
-                keyboardType: TextInputType.number,
-                onChanged: (val) => _maxPrice = double.tryParse(val),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 30),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Filter Results", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.primary)),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(Icons.close, color: colorScheme.secondary),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 25),
+                  Text("Price Range", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: colorScheme.secondary)),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _buildPriceChip('All Prices', null, colorScheme, setModalState),
+                      _buildPriceChip('Under 100 SYP', 'under_100', colorScheme, setModalState),
+                      _buildPriceChip('Under 1,000 SYP', 'under_1000', colorScheme, setModalState),
+                      _buildPriceChip('Under 10,000 SYP', 'under_10000', colorScheme, setModalState),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: minRoomsController,
+                    decoration: InputDecoration(
+                      labelText: "Minimum Rooms",
+                      prefixIcon: Icon(Icons.king_bed, color: colorScheme.secondary),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    keyboardType: TextInputType.number,
+                    onChanged: (val) {
+                      if (val.isEmpty) {
+                        _minRooms = null;
+                      } else {
+                        _minRooms = int.tryParse(val);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 15),
+                  if (_loadingProvinces)
+                    const Center(child: CircularProgressIndicator())
+                  else
+                    DropdownButtonFormField<int?>(
+                      decoration: InputDecoration(
+                        labelText: "Province",
+                        prefixIcon: Icon(Icons.location_city, color: colorScheme.secondary),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      value: _selectedProvinceId,
+                      items: [
+                        DropdownMenuItem<int?>(
+                          value: null,
+                          child: Text("All Provinces", style: TextStyle(color: Colors.grey[600])),
+                        ),
+                        ..._provinces.map((province) {
+                          return DropdownMenuItem<int?>(
+                            value: int.tryParse(province['id']?.toString() ?? '0'),
+                            child: Text(province['name']?.toString() ?? 'Unknown'),
+                          );
+                        }).toList(),
+                      ],
+                      onChanged: (value) {
+                        setModalState(() {
+                          _selectedProvinceId = value;
+                          if (value != null) {
+                            _fetchCities(value);
+                          } else {
+                            _cities = [];
+                            _selectedCityId = null;
+                          }
+                        });
+                      },
+                    ),
+                  const SizedBox(height: 15),
+                  if (_selectedProvinceId != null)
+                    DropdownButtonFormField<int?>(
+                      decoration: InputDecoration(
+                        labelText: "City",
+                        prefixIcon: Icon(Icons.location_on, color: colorScheme.secondary),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      value: _selectedCityId,
+                      items: [
+                        DropdownMenuItem<int?>(
+                          value: null,
+                          child: Text("All Cities", style: TextStyle(color: Colors.grey[600])),
+                        ),
+                        ..._cities.map((city) {
+                          return DropdownMenuItem<int?>(
+                            value: int.tryParse(city['id']?.toString() ?? '0'),
+                            child: Text(city['name']?.toString() ?? 'Unknown'),
+                          );
+                        }).toList(),
+                      ],
+                      onChanged: (value) {
+                        setModalState(() => _selectedCityId = value);
+                      },
+                    ),
+                  if (_selectedProvinceId != null) const SizedBox(height: 15),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text("Has Elevator", style: TextStyle(fontWeight: FontWeight.w500)),
+                    value: _hasElevator,
+                    onChanged: (val) => setModalState(() => _hasElevator = val),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text("Has Balcony", style: TextStyle(fontWeight: FontWeight.w500)),
+                    value: _hasBalcony,
+                    onChanged: (val) => setModalState(() => _hasBalcony = val),
+                  ),
+                  const SizedBox(height: 25),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(0, 55),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: () {
+                            setModalState(() {
+                              _resetFilters();
+                              minRoomsController.clear();
+                            });
+                            Navigator.pop(context);
+                          },
+                          child: Text("Reset All"),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colorScheme.primary,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(0, 55),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _fetchApartments();
+                          },
+                          child: const Text("Apply Filters"),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              const SizedBox(height: 15),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text("Has Elevator", style: TextStyle(fontWeight: FontWeight.w500)),
-                value: _hasElevator,
-                activeColor: colorScheme.primary,
-                onChanged: (val) => setModalState(() => _hasElevator = val),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 55),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: () {
-                  Navigator.pop(context);
-                  _fetchApartments();
-                },
-                child: const Text("Apply Filters", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              )
-            ],
+            ),
           ),
         ),
       ),
     );
   }
+
+  Widget _buildPriceChip(String label, String? value, ColorScheme colorScheme, StateSetter setModalState) {
+    bool isSelected = _priceRange == value;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        setModalState(() {
+          _priceRange = selected ? value : null;
+        });
+      },
+      selectedColor: colorScheme.primary,
+    );
+  }
+}
+
+extension on Map<String, dynamic> {
+  get data => null;
 }
